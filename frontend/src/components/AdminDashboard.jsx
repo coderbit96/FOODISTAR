@@ -1,19 +1,62 @@
 import axios from "axios";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { serverUrl } from "../App";
 import { useTheme } from "../context/ThemeContext";
 import { useToast } from "../context/ToastContext";
 import Nav from "./Nav";
-import { FaChartLine, FaMoneyBillWave, FaReceipt, FaStore, FaTrash, FaUserShield, FaUsers } from "react-icons/fa";
+import { FaChartLine, FaCheck, FaChevronDown, FaMoneyBillWave, FaReceipt, FaShippingFast, FaStore, FaTrash, FaUser, FaUserShield, FaUsers } from "react-icons/fa";
 
 const roleOptions = ["user", "owner", "deliveryBoy", "admin"];
+const roleMeta = {
+  user: {
+    label: "User",
+    description: "Browse, order, and track",
+    Icon: FaUser,
+    lightClasses: "border-sky-200 bg-sky-50 text-sky-700",
+    darkClasses: "border-sky-400/20 bg-sky-500/10 text-sky-200",
+    menuGlow: "shadow-[0_16px_36px_rgba(14,165,233,0.14)]",
+  },
+  owner: {
+    label: "Owner",
+    description: "Manage shops and menus",
+    Icon: FaStore,
+    lightClasses: "border-orange-200 bg-orange-50 text-orange-700",
+    darkClasses: "border-orange-400/20 bg-orange-500/10 text-orange-200",
+    menuGlow: "shadow-[0_16px_36px_rgba(249,115,22,0.14)]",
+  },
+  deliveryBoy: {
+    label: "Delivery",
+    description: "Deliver active orders",
+    Icon: FaShippingFast,
+    lightClasses: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    darkClasses: "border-emerald-400/20 bg-emerald-500/10 text-emerald-200",
+    menuGlow: "shadow-[0_16px_36px_rgba(16,185,129,0.14)]",
+  },
+  admin: {
+    label: "Admin",
+    description: "Platform oversight access",
+    Icon: FaUserShield,
+    lightClasses: "border-rose-200 bg-rose-50 text-rose-700",
+    darkClasses: "border-rose-400/20 bg-rose-500/10 text-rose-200",
+    menuGlow: "shadow-[0_16px_36px_rgba(244,63,94,0.14)]",
+  },
+};
 
 const getRoleLabel = (role) => {
   if (role === "deliveryBoy") return "Delivery";
   if (!role) return "N/A";
   return role.charAt(0).toUpperCase() + role.slice(1);
+};
+const getRoleMeta = (role) => roleMeta[role] || {
+  label: getRoleLabel(role),
+  description: "Role access",
+  Icon: FaUser,
+  lightClasses: "border-slate-200 bg-slate-50 text-slate-700",
+  darkClasses: "border-white/10 bg-white/5 text-slate-200",
+  menuGlow: "shadow-[0_16px_36px_rgba(100,116,139,0.14)]",
 };
 
 const formatMoney = (value) => `INR ${Number(value || 0).toLocaleString("en-IN")}`;
@@ -25,6 +68,165 @@ const hasRequiredUserData = (user) => {
   const mobileOk = mobileDigits.length >= 10 && !/^0+$/.test(mobileDigits);
   return fullNameOk && emailOk && mobileOk;
 };
+
+function RoleSelectMenu({ value, disabled, isDark, onChange }) {
+  const triggerRef = useRef(null);
+  const menuRef = useRef(null);
+  const [open, setOpen] = useState(false);
+  const [menuPosition, setMenuPosition] = useState(null);
+  const selectedMeta = getRoleMeta(value);
+
+  const updateMenuPosition = () => {
+    const rect = triggerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+
+    const menuWidth = Math.max(rect.width, 220);
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const menuHeightEstimate = 244;
+    const gap = 10;
+    const left = Math.min(Math.max(16, rect.right - menuWidth), viewportWidth - menuWidth - 16);
+    const showAbove = rect.bottom + menuHeightEstimate + gap > viewportHeight && rect.top > menuHeightEstimate;
+
+    setMenuPosition({
+      width: menuWidth,
+      left,
+      top: showAbove ? rect.top - gap : rect.bottom + gap,
+      placement: showAbove ? "top" : "bottom",
+    });
+  };
+
+  useEffect(() => {
+    if (!open) return undefined;
+
+    updateMenuPosition();
+
+    const handlePointerDown = (event) => {
+      const target = event.target;
+      if (triggerRef.current?.contains(target) || menuRef.current?.contains(target)) return;
+      setOpen(false);
+    };
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        setOpen(false);
+        triggerRef.current?.focus();
+      }
+    };
+
+    const handleLayout = () => updateMenuPosition();
+
+    document.addEventListener("mousedown", handlePointerDown);
+    window.addEventListener("resize", handleLayout);
+    window.addEventListener("scroll", handleLayout, true);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      window.removeEventListener("resize", handleLayout);
+      window.removeEventListener("scroll", handleLayout, true);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (disabled) setOpen(false);
+  }, [disabled]);
+
+  const handleSelect = (nextRole) => {
+    setOpen(false);
+    if (nextRole !== value) onChange(nextRole);
+  };
+
+  return (
+    <>
+      <button
+        ref={triggerRef}
+        type="button"
+        disabled={disabled}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        onClick={() => {
+          if (disabled) return;
+          setOpen((prev) => !prev);
+        }}
+        className={`group mx-auto flex w-full max-w-[126px] items-center justify-between gap-2 rounded-[18px] border px-2.5 py-1.5 text-left transition ${
+          isDark
+            ? "border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03))] text-white shadow-[0_14px_32px_rgba(2,6,23,0.18)] hover:border-[#ff6b43]/35"
+            : "border-orange-100 bg-[linear-gradient(135deg,#ffffff,#fff7f2)] text-slate-900 shadow-[0_12px_28px_rgba(15,23,42,0.08)] hover:border-[#ff6b43]/35 hover:shadow-[0_18px_40px_rgba(255,107,67,0.12)]"
+        } ${disabled ? "cursor-not-allowed opacity-70" : ""}`}
+      >
+        <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border ${isDark ? selectedMeta.darkClasses : selectedMeta.lightClasses}`}>
+          <selectedMeta.Icon size={13} />
+        </span>
+        <span className="min-w-0 flex-1 truncate">
+          <span className="block truncate text-xs font-semibold">{selectedMeta.label}</span>
+        </span>
+        <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full transition ${isDark ? "bg-white/[0.06] text-slate-300" : "bg-orange-50 text-[#ff6b43]"} ${open ? "rotate-180" : ""}`}>
+          <FaChevronDown size={10} />
+        </span>
+      </button>
+
+      {open && menuPosition && createPortal(
+        <div
+          ref={menuRef}
+          className={`fixed z-[11000] overflow-hidden rounded-[22px] border p-2 shadow-[0_26px_80px_rgba(15,23,42,0.24)] backdrop-blur-xl ${
+            isDark
+              ? "border-white/10 bg-[linear-gradient(180deg,rgba(18,27,48,0.98),rgba(10,16,32,0.98))]"
+              : "border-orange-100 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(255,247,242,0.98))]"
+          }`}
+          style={{
+            left: menuPosition.left,
+            top: menuPosition.placement === "top" ? "auto" : menuPosition.top,
+            bottom: menuPosition.placement === "top" ? window.innerHeight - menuPosition.top : "auto",
+            width: menuPosition.width,
+          }}
+        >
+          <div className={`mb-2 rounded-[16px] border px-3 py-2 ${isDark ? "border-white/10 bg-white/5" : "border-orange-100 bg-orange-50/70"}`}>
+            <p className={`text-[9px] font-semibold uppercase tracking-[0.22em] ${isDark ? "text-slate-400" : "text-slate-500"}`}>Assign Role</p>
+            <p className={`mt-1 text-[11px] ${isDark ? "text-slate-300" : "text-slate-600"}`}>Choose the access level that best matches this account.</p>
+          </div>
+
+          <div className="space-y-1">
+            {roleOptions.map((role) => {
+              const optionMeta = getRoleMeta(role);
+              const isSelected = role === value;
+
+              return (
+                <button
+                  key={role}
+                  type="button"
+                  onClick={() => handleSelect(role)}
+                  className={`flex w-full items-center gap-2.5 rounded-[16px] border px-3 py-2.5 text-left transition ${
+                    isSelected
+                      ? isDark
+                        ? `border-white/10 bg-white/[0.08] ${optionMeta.menuGlow}`
+                        : `border-orange-200 bg-white shadow-[0_14px_36px_rgba(255,107,67,0.14)] ${optionMeta.menuGlow}`
+                      : isDark
+                        ? "border-transparent text-slate-200 hover:border-white/10 hover:bg-white/5"
+                        : "border-transparent text-slate-700 hover:border-orange-100 hover:bg-white"
+                  }`}
+                >
+                  <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border ${isDark ? optionMeta.darkClasses : optionMeta.lightClasses}`}>
+                    <optionMeta.Icon size={13} />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-xs font-semibold">{optionMeta.label}</span>
+                    <span className={`block text-[10px] ${isDark ? "text-slate-400" : "text-slate-500"}`}>{optionMeta.description}</span>
+                  </span>
+                  <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${isSelected ? "bg-[#ff6b43] text-white" : isDark ? "bg-white/5 text-slate-500" : "bg-slate-100 text-slate-400"}`}>
+                    {isSelected ? <FaCheck size={10} /> : <FaChevronDown size={8} className="-rotate-90" />}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>,
+        document.body
+      )}
+    </>
+  );
+}
 
 function AdminDashboard() {
   const { isDark } = useTheme();
@@ -346,18 +548,14 @@ function AdminDashboard() {
                       <td className="px-5 py-4 break-all align-top">{user.email}</td>
                       <td className="px-5 py-4 break-words align-top">{user.mobile}</td>
                       <td className="px-5 py-4 align-top">
-                        <select
-                          className={`w-full min-w-0 px-3 py-2 rounded-xl border text-sm ${isDark ? "bg-[#1a1a2e] border-[#4b5563]" : "bg-white border-gray-200 shadow-sm"}`}
-                          value={user.role}
-                          disabled={busyKey === `role-${user._id}`}
-                          onChange={(e) => handleRoleChange(user._id, e.target.value)}
-                        >
-                          {roleOptions.map((role) => (
-                            <option key={role} value={role}>
-                              {getRoleLabel(role)}
-                            </option>
-                          ))}
-                        </select>
+                        <div className="flex justify-center">
+                          <RoleSelectMenu
+                            value={user.role}
+                            disabled={busyKey === `role-${user._id}`}
+                            isDark={isDark}
+                            onChange={(nextRole) => handleRoleChange(user._id, nextRole)}
+                          />
+                        </div>
                       </td>
                       <td className="px-5 py-4 align-top">{new Date(user.createdAt).toLocaleDateString()}</td>
                       <td className="px-5 py-4 align-top">
