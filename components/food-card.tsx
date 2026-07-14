@@ -1,0 +1,88 @@
+"use client";
+
+import { Heart, Minus, Plus, ShoppingCart, Star } from "lucide-react";
+import { motion } from "framer-motion";
+import { useState } from "react";
+import { clsx } from "clsx";
+import { useFoodistar } from "@/components/app-provider";
+import { FoodImage } from "@/components/food-image";
+import type { MenuItem } from "@/lib/types";
+
+export function FoodCard({ item }: { item: MenuItem }) {
+  const { addToCart, toggleFavorite, favorites } = useFoodistar();
+  const [quantity, setQuantity] = useState(1);
+  const favorite = favorites.includes(item.id);
+
+  return (
+    <motion.article
+      layout
+      initial={{ opacity: 0, y: 18 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileHover={{ y: -4 }}
+      className="overflow-hidden rounded-lg border border-orange-100 bg-white shadow-sm"
+    >
+      <div className="relative h-44 overflow-hidden bg-orange-50">
+        <FoodImage src={item.image} name={item.name} category={item.category} className="h-full w-full object-cover transition duration-500 hover:scale-105" />
+        <button
+          className="brand-focus absolute left-3 top-3 rounded-lg bg-white p-2 text-[#f04423] shadow"
+          onClick={() => toggleFavorite(item.id)}
+          aria-label="Toggle favorite"
+        >
+          <Heart size={18} fill={favorite ? "currentColor" : "none"} />
+        </button>
+        <span
+          className={clsx(
+            "absolute right-3 top-3 rounded-lg px-2 py-1 text-xs font-black uppercase",
+            item.foodType === "veg" ? "bg-emerald-600 text-white" : "bg-red-600 text-white"
+          )}
+        >
+          {item.foodType === "veg" ? "Veg" : "Non veg"}
+        </span>
+      </div>
+
+      <div className="p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h3 className="truncate text-base font-black text-slate-950">{item.name}</h3>
+            <p className="mt-1 line-clamp-2 min-h-10 text-sm leading-5 text-slate-500">{item.description}</p>
+          </div>
+          <span className="shrink-0 rounded-lg bg-orange-50 px-2 py-1 text-sm font-black text-[#f04423]">
+            Rs {item.price}
+          </span>
+        </div>
+
+        <div className="mt-4 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-1 text-sm font-bold text-slate-700">
+            <Star size={16} className="fill-amber-400 text-amber-400" />
+            {item.rating.toFixed(1)}
+          </div>
+
+          <div className="flex items-center overflow-hidden rounded-lg border border-slate-200">
+            <button
+              className="brand-focus p-2 text-slate-700 hover:bg-slate-50"
+              onClick={() => setQuantity((value) => Math.max(1, value - 1))}
+              aria-label="Decrease quantity"
+            >
+              <Minus size={14} />
+            </button>
+            <span className="w-8 text-center text-sm font-black">{quantity}</span>
+            <button
+              className="brand-focus p-2 text-slate-700 hover:bg-slate-50"
+              onClick={() => setQuantity((value) => value + 1)}
+              aria-label="Increase quantity"
+            >
+              <Plus size={14} />
+            </button>
+            <button
+              className="brand-focus bg-[#f04423] p-2 text-white"
+              onClick={() => addToCart(item, quantity)}
+              aria-label="Add to cart"
+            >
+              <ShoppingCart size={16} />
+            </button>
+          </div>
+        </div>
+      </div>
+    </motion.article>
+  );
+}
