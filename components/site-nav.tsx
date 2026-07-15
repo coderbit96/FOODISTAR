@@ -2,28 +2,50 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Heart, LogOut, Menu, PackageCheck, ShoppingCart, Store, UserRound, X } from "lucide-react";
+import { Heart, LogOut, Menu, PackageCheck, ShoppingCart, Store, Truck, UserRound, X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
 import { clsx } from "clsx";
-import { useFoodistar } from "@/components/app-provider";
-
-const links = [
-  { href: "/", label: "Menu" },
-  { href: "/orders", label: "Orders" },
-  { href: "/owner", label: "Owner" },
-  { href: "/profile", label: "Profile" }
-];
+import { useRasoiGo } from "@/components/app-provider";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export function SiteNav() {
-  const { profile, cart, logout, favorites } = useFoodistar();
+  const { profile, cart, logout, favorites } = useRasoiGo();
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
 
   if (!profile) return null;
 
-  const navLinks = links.filter((link) => link.href !== "/owner" || profile.role === "owner");
+  const navLinks = {
+    user: [
+      { href: "/", label: "Menu" },
+      { href: "/orders", label: "My orders" },
+      { href: "/profile", label: "Profile" }
+    ],
+    owner: [
+      { href: "/owner", label: "Owner menu" },
+      { href: "/orders", label: "Kitchen orders" },
+      { href: "/", label: "Menu preview" },
+      { href: "/profile", label: "Profile" }
+    ],
+    delivery: [
+      { href: "/orders", label: "Delivery queue" },
+      { href: "/profile", label: "Profile" }
+    ],
+    admin: [
+      { href: "/admin", label: "Admin" },
+      { href: "/", label: "Menu preview" },
+      { href: "/profile", label: "Profile" }
+    ]
+  }[profile.role];
+
+  const roleLabel = {
+    user: "User",
+    owner: "Restaurant Owner",
+    delivery: "Delivery Partner",
+    admin: "Admin"
+  }[profile.role];
 
   const handleLogout = async () => {
     await logout();
@@ -33,8 +55,8 @@ export function SiteNav() {
   return (
     <header className="sticky top-0 z-30 border-b border-orange-100 bg-[#fff9f4]/90 backdrop-blur">
       <div className="mx-auto flex min-h-16 w-full max-w-7xl items-center justify-between px-4 py-3">
-        <Link href="/" className="brand-focus text-2xl font-black tracking-wide text-[#f04423]">
-          FOODISTAR
+        <Link href="/" className="text-2xl font-black tracking-wide text-[#f04423]">
+          RasoiGo
         </Link>
 
         <nav className="hidden items-center gap-2 md:flex">
@@ -45,7 +67,7 @@ export function SiteNav() {
               className={clsx(
                 "brand-focus rounded-lg px-3 py-2 text-sm font-semibold transition",
                 pathname === link.href
-                  ? "bg-[#f04423] text-white"
+                  ? "bg-[#f04423] text-white hover:bg-[#c93418] hover:text-white"
                   : "text-slate-600 hover:bg-orange-50 hover:text-[#f04423]"
               )}
             >
@@ -55,30 +77,35 @@ export function SiteNav() {
         </nav>
 
         <div className="flex items-center gap-2">
-          <Link
-            href="/favorites"
-            className="brand-focus relative rounded-lg bg-white p-2 text-[#f04423] shadow-sm ring-1 ring-orange-100"
-            aria-label="Favorites"
-          >
-            <Heart size={20} />
-            {favorites.length > 0 && (
-              <span className="absolute -right-1 -top-1 rounded-full bg-emerald-600 px-1.5 text-[10px] font-bold text-white">
-                {favorites.length}
-              </span>
-            )}
-          </Link>
-          <Link
-            href="/cart"
-            className="brand-focus relative rounded-lg bg-white p-2 text-[#f04423] shadow-sm ring-1 ring-orange-100"
-            aria-label="Cart"
-          >
-            <ShoppingCart size={20} />
-            {cart.length > 0 && (
-              <span className="absolute -right-1 -top-1 rounded-full bg-sky-600 px-1.5 text-[10px] font-bold text-white">
-                {cart.length}
-              </span>
-            )}
-          </Link>
+          <ThemeToggle />
+          {profile.role === "user" && (
+            <>
+              <Link
+                href="/favorites"
+                className="brand-focus relative rounded-lg bg-white p-2 text-[#f04423] shadow-sm ring-1 ring-orange-100"
+                aria-label="Favorites"
+              >
+                <Heart size={20} />
+                {favorites.length > 0 && (
+                  <span className="absolute -right-1 -top-1 rounded-full bg-emerald-600 px-1.5 text-[10px] font-bold text-white">
+                    {favorites.length}
+                  </span>
+                )}
+              </Link>
+              <Link
+                href="/cart"
+                className="brand-focus relative rounded-lg bg-white p-2 text-[#f04423] shadow-sm ring-1 ring-orange-100"
+                aria-label="Cart"
+              >
+                <ShoppingCart size={20} />
+                {cart.length > 0 && (
+                  <span className="absolute -right-1 -top-1 rounded-full bg-sky-600 px-1.5 text-[10px] font-bold text-white">
+                    {cart.length}
+                  </span>
+                )}
+              </Link>
+            </>
+          )}
 
           <button
             className="brand-focus hidden rounded-lg bg-slate-950 px-3 py-2 text-sm font-semibold text-white md:inline-flex"
@@ -111,13 +138,13 @@ export function SiteNav() {
               </div>
               <div className="min-w-0">
                 <p className="truncate text-sm font-bold text-slate-900">{profile.fullName}</p>
-                <p className="text-xs capitalize text-slate-500">{profile.role}</p>
+                <p className="text-xs text-slate-500">{roleLabel}</p>
               </div>
             </div>
 
             <div className="grid gap-2">
               {navLinks.map((link) => {
-                const Icon = link.href === "/orders" ? PackageCheck : link.href === "/owner" ? Store : link.href === "/profile" ? UserRound : ShoppingCart;
+                const Icon = link.href === "/orders" ? (profile.role === "delivery" ? Truck : PackageCheck) : link.href === "/owner" || link.href === "/admin" ? Store : link.href === "/profile" ? UserRound : ShoppingCart;
                 return (
                   <Link
                     key={link.href}

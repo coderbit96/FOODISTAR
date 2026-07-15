@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { getFoodImageOptions } from "@/lib/food-images";
 
 type FoodImageProps = {
   src: string;
@@ -10,7 +11,7 @@ type FoodImageProps = {
   loading?: "eager" | "lazy";
 };
 
-const hardFallbacks = ["/food/image2.webp", "/food/image10.avif", "/food/image1.jpg"];
+const hardFallbacks = ["/food/image11.jpg", "/food/image8.avif"];
 
 function apiImageUrl(name: string, category?: string) {
   const params = new URLSearchParams({ name });
@@ -19,7 +20,16 @@ function apiImageUrl(name: string, category?: string) {
 }
 
 export function FoodImage({ src, name, category, className, loading = "lazy" }: FoodImageProps) {
-  const initialUrls = useMemo(() => [src || apiImageUrl(name, category), ...hardFallbacks], [category, name, src]);
+  const imageOptions = useMemo(() => getFoodImageOptions(name, category), [category, name]);
+  const sourceUrls = useMemo(() => {
+    if (!src || src.startsWith("/api/food-image")) return [apiImageUrl(name, category), ...imageOptions];
+    if (src.startsWith("/food/image")) return [...imageOptions, src];
+    return [src, ...imageOptions];
+  }, [category, imageOptions, name, src]);
+  const initialUrls = useMemo(
+    () => Array.from(new Set([...sourceUrls, ...hardFallbacks])),
+    [sourceUrls]
+  );
   const [urls, setUrls] = useState(initialUrls);
   const [activeIndex, setActiveIndex] = useState(0);
 
@@ -29,7 +39,7 @@ export function FoodImage({ src, name, category, className, loading = "lazy" }: 
     async function loadImageOptions() {
       const shouldResolveFromApi = !src || src.startsWith("/api/food-image");
       if (!shouldResolveFromApi) {
-        setUrls([src, ...hardFallbacks]);
+        setUrls(Array.from(new Set([...sourceUrls, ...hardFallbacks])));
         setActiveIndex(0);
         return;
       }
@@ -38,14 +48,14 @@ export function FoodImage({ src, name, category, className, loading = "lazy" }: 
         const response = await fetch(apiImageUrl(name, category));
         if (!response.ok) throw new Error("Food image API failed");
         const data = (await response.json()) as { fallbackUrls?: string[]; imageUrl?: string };
-        const nextUrls = Array.from(new Set([data.imageUrl, ...(data.fallbackUrls || []), ...hardFallbacks].filter(Boolean))) as string[];
+        const nextUrls = Array.from(new Set([data.imageUrl, ...(data.fallbackUrls || []), ...imageOptions, ...hardFallbacks].filter(Boolean))) as string[];
         if (!cancelled) {
           setUrls(nextUrls);
           setActiveIndex(0);
         }
       } catch {
         if (!cancelled) {
-          setUrls(hardFallbacks);
+          setUrls(Array.from(new Set([...imageOptions, ...hardFallbacks])));
           setActiveIndex(0);
         }
       }
@@ -56,7 +66,7 @@ export function FoodImage({ src, name, category, className, loading = "lazy" }: 
     return () => {
       cancelled = true;
     };
-  }, [category, name, src]);
+  }, [category, imageOptions, name, sourceUrls, src]);
 
   return (
     <img

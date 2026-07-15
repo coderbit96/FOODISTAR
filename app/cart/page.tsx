@@ -3,12 +3,30 @@
 import Link from "next/link";
 import { Minus, Plus, Trash2 } from "lucide-react";
 import { ProtectedPage } from "@/components/protected-page";
-import { useFoodistar } from "@/components/app-provider";
+import { useRasoiGo } from "@/components/app-provider";
 import { FoodImage } from "@/components/food-image";
 
 export default function CartPage() {
-  const { cart, cartTotal, updateCartQuantity, removeFromCart } = useFoodistar();
+  const { cart, cartTotal, updateCartQuantity, removeFromCart, profile } = useRasoiGo();
   const deliveryFee = cartTotal >= 500 || cartTotal === 0 ? 0 : 40;
+
+  if (profile?.role !== "user") {
+    const target = profile?.role === "owner" ? "/owner" : "/orders";
+    const label = profile?.role === "owner" ? "Open owner menu" : "Open delivery queue";
+    return (
+      <ProtectedPage>
+        <main className="mx-auto w-full max-w-3xl px-4 py-10">
+          <div className="rounded-lg border border-orange-100 bg-white p-8 text-center shadow-sm">
+            <h1 className="text-2xl font-black text-slate-950">Customer cart</h1>
+            <p className="mt-2 text-sm text-slate-500">Cart and checkout are available for User accounts.</p>
+            <Link className="mt-4 inline-flex rounded-lg bg-[#f04423] px-4 py-3 text-sm font-black text-white" href={target}>
+              {label}
+            </Link>
+          </div>
+        </main>
+      </ProtectedPage>
+    );
+  }
 
   return (
     <ProtectedPage>

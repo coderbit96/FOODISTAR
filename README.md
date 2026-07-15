@@ -1,6 +1,6 @@
-# FOODISTAR
+# RasoiGo
 
-FOODISTAR is a Next.js, TypeScript, Tailwind CSS, and Framer Motion food ordering website. The old Express, MongoDB, Razorpay, and Vite stack has been removed.
+RasoiGo is a Next.js, TypeScript, Tailwind CSS, and Framer Motion food ordering website. The old Express, MongoDB, Razorpay, and Vite stack has been removed.
 
 ## What Is Included
 
@@ -15,7 +15,7 @@ FOODISTAR is a Next.js, TypeScript, Tailwind CSS, and Framer Motion food orderin
 
 ## Firebase
 
-Firebase is initialized in `lib/firebase.ts` with the supplied FOODISTAR project:
+Firebase is initialized in `lib/firebase.ts` with the supplied RasoiGo project:
 
 ```ts
 const firebaseConfig = {

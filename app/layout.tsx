@@ -1,10 +1,25 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { AppProvider } from "@/components/app-provider";
+import { appName, appUrl, createPageMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = {
-  title: "FOODISTAR",
-  description: "Firebase powered food ordering experience"
+  ...createPageMetadata({
+    title: appName,
+    description: "RasoiGo helps you order Bengali classics, fast food, desserts, tea-time snacks, and city favorites from trusted local restaurants.",
+    path: "/"
+  }),
+  metadataBase: new URL(appUrl),
+  applicationName: appName,
+  authors: [{ name: appName }],
+  creator: appName,
+  publisher: appName,
+  category: "food delivery",
+  icons: {
+    icon: "/icon.svg",
+    shortcut: "/icon.svg",
+    apple: "/icon.svg"
+  }
 };
 
 export default function RootLayout({
@@ -13,8 +28,21 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              try {
+                var theme = localStorage.getItem("rasoigo:theme");
+                var prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+                if (theme === "dark" || (!theme && prefersDark)) {
+                  document.documentElement.classList.add("dark");
+                }
+              } catch {}
+            `
+          }}
+        />
         <AppProvider>{children}</AppProvider>
       </body>
     </html>

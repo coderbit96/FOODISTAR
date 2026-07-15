@@ -3,11 +3,11 @@
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { SiteNav } from "@/components/site-nav";
-import { useFoodistar } from "@/components/app-provider";
+import { useRasoiGo } from "@/components/app-provider";
 import { Preloader } from "@/components/preloader";
 
 export function ProtectedPage({ children }: { children: React.ReactNode }) {
-  const { profile, loading } = useFoodistar();
+  const { profile, loading } = useRasoiGo();
   const router = useRouter();
 
   useEffect(() => {
@@ -19,7 +19,7 @@ export function ProtectedPage({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="foodistar-shell">
+    <div className="rasoigo-shell">
       <SiteNav />
       {children}
     </div>

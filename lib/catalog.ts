@@ -1,7 +1,5 @@
-import type { FoodistarData, MenuItem, Shop } from "@/lib/types";
-
-const dishImage = (query: string) =>
-  `/api/food-image?name=${encodeURIComponent(query)}`;
+import type { RasoiGoData, MenuItem, Shop } from "@/lib/types";
+import { categoryImages, getDishImage } from "@/lib/food-images";
 
 export const categories = [
   "All",
@@ -19,21 +17,7 @@ export const categories = [
   "Tea Break"
 ];
 
-export const categoryImages: Record<string, string> = {
-  Snacks: "/food/image1.jpg",
-  "Main Course": "/food/image2.webp",
-  Desserts: "/food/image3.jpg",
-  Pizza: "/food/image4.avif",
-  Burgers: "/food/image5.jpg",
-  Bengali: "/food/image2.webp",
-  Sandwiches: "/food/image6.jpg",
-  "South Indian": "/food/image7.jpg",
-  "North Indian": "/food/image8.avif",
-  Chinese: "/food/image9.jpg",
-  "Fast Food": "/food/image10.avif",
-  "Tea Break": "/food/image1.jpg",
-  All: "/food/image11.jpg"
-};
+export { categoryImages };
 
 export const seedShops: Shop[] = [
   {
@@ -85,6 +69,86 @@ export const seedShops: Shop[] = [
     deliveryTime: "18-24 min",
     image: "/food/image10.avif",
     open: true
+  },
+  {
+    id: "shop-dragon-wok",
+    name: "Dragon Wok",
+    city: "Kolkata",
+    cuisine: "Chinese and Noodles",
+    rating: 4.6,
+    deliveryTime: "22-28 min",
+    image: getDishImage("Veg Hakka Noodles", "Chinese"),
+    open: true
+  },
+  {
+    id: "shop-dosa-darbar",
+    name: "Dosa Darbar",
+    city: "Kolkata",
+    cuisine: "South Indian",
+    rating: 4.7,
+    deliveryTime: "20-25 min",
+    image: getDishImage("Masala Dosa", "South Indian"),
+    open: true
+  },
+  {
+    id: "shop-sweet-slice",
+    name: "Sweet Slice Bakery",
+    city: "Kolkata",
+    cuisine: "Cakes and Desserts",
+    rating: 4.5,
+    deliveryTime: "18-22 min",
+    image: "/food/image3.jpg",
+    open: true
+  },
+  {
+    id: "shop-sandwich-studio",
+    name: "Sandwich Studio",
+    city: "Kolkata",
+    cuisine: "Sandwiches and Cafe Bites",
+    rating: 4.4,
+    deliveryTime: "16-22 min",
+    image: "/food/image6.jpg",
+    open: true
+  },
+  {
+    id: "shop-biryani-baari",
+    name: "Biryani Baari",
+    city: "Kolkata",
+    cuisine: "Biryani and Mughlai",
+    rating: 4.8,
+    deliveryTime: "30-40 min",
+    image: getDishImage("Kolkata Chicken Biryani", "Main Course"),
+    open: true
+  },
+  {
+    id: "shop-fuchka-factory",
+    name: "Fuchka Factory",
+    city: "Kolkata",
+    cuisine: "Street Snacks",
+    rating: 4.6,
+    deliveryTime: "15-20 min",
+    image: getDishImage("Kolkata Fuchka", "Snacks"),
+    open: true
+  },
+  {
+    id: "shop-tandoor-trails",
+    name: "Tandoor Trails",
+    city: "Kolkata",
+    cuisine: "Tandoor and Curries",
+    rating: 4.7,
+    deliveryTime: "28-35 min",
+    image: getDishImage("Tandoori Chicken", "Main Course"),
+    open: true
+  },
+  {
+    id: "shop-mishti-mahal",
+    name: "Mishti Mahal",
+    city: "Kolkata",
+    cuisine: "Bengali Sweets",
+    rating: 4.8,
+    deliveryTime: "18-24 min",
+    image: getDishImage("Soft Rosogolla", "Desserts"),
+    open: true
   }
 ];
 
@@ -97,7 +161,7 @@ export const seedItems: MenuItem[] = [
     foodType: "veg",
     price: 249,
     rating: 4.8,
-    image: dishImage("paneer butter masala indian curry"),
+    image: getDishImage("Paneer Butter Masala", "North Indian"),
     description: "Creamy tomato gravy, soft paneer, and warm spices.",
     createdAt: new Date("2026-07-01").toISOString()
   },
@@ -109,7 +173,7 @@ export const seedItems: MenuItem[] = [
     foodType: "non veg",
     price: 299,
     rating: 4.9,
-    image: dishImage("kolkata chicken biryani"),
+    image: getDishImage("Kolkata Chicken Biryani", "Main Course"),
     description: "Aromatic rice, tender chicken, potato, and balanced masala.",
     createdAt: new Date("2026-07-02").toISOString()
   },
@@ -121,7 +185,7 @@ export const seedItems: MenuItem[] = [
     foodType: "veg",
     price: 229,
     rating: 4.5,
-    image: dishImage("margherita pizza"),
+    image: getDishImage("Classic Margherita Pizza", "Pizza"),
     description: "Mozzarella, basil, tomato sauce, and a crisp crust.",
     createdAt: new Date("2026-07-03").toISOString()
   },
@@ -133,7 +197,7 @@ export const seedItems: MenuItem[] = [
     foodType: "non veg",
     price: 189,
     rating: 4.4,
-    image: dishImage("cheese burger"),
+    image: getDishImage("Smoky Cheese Burger", "Burgers"),
     description: "Juicy patty, smoked cheese, pickles, and house sauce.",
     createdAt: new Date("2026-07-04").toISOString()
   },
@@ -145,7 +209,7 @@ export const seedItems: MenuItem[] = [
     foodType: "veg",
     price: 149,
     rating: 4.6,
-    image: dishImage("masala dosa"),
+    image: getDishImage("Masala Dosa", "South Indian"),
     description: "Crisp dosa with spiced potato, sambar, and chutney.",
     createdAt: new Date("2026-07-05").toISOString()
   },
@@ -157,7 +221,7 @@ export const seedItems: MenuItem[] = [
     foodType: "veg",
     price: 89,
     rating: 4.7,
-    image: dishImage("samosa chai"),
+    image: getDishImage("Adrak Chai and Samosa", "Tea Break"),
     description: "Strong ginger tea paired with flaky potato samosa.",
     createdAt: new Date("2026-07-06").toISOString()
   },
@@ -169,7 +233,7 @@ export const seedItems: MenuItem[] = [
     foodType: "non veg",
     price: 389,
     rating: 4.9,
-    image: dishImage("shorshe ilish bengali fish curry"),
+    image: getDishImage("Shorshe Ilish", "Bengali"),
     description: "Hilsa cooked in sharp mustard gravy with green chilli aroma.",
     createdAt: new Date("2026-07-07").toISOString()
   },
@@ -181,7 +245,7 @@ export const seedItems: MenuItem[] = [
     foodType: "non veg",
     price: 349,
     rating: 4.8,
-    image: dishImage("kosha mangsho mutton curry"),
+    image: getDishImage("Kosha Mangsho", "Bengali"),
     description: "Slow-cooked mutton in rich dark Bengali spices and ghee.",
     createdAt: new Date("2026-07-08").toISOString()
   },
@@ -193,7 +257,7 @@ export const seedItems: MenuItem[] = [
     foodType: "non veg",
     price: 329,
     rating: 4.8,
-    image: dishImage("chingri malai curry prawn"),
+    image: getDishImage("Chingri Malai Curry", "Bengali"),
     description: "Prawns simmered in creamy coconut milk, garam masala, and mustard oil.",
     createdAt: new Date("2026-07-09").toISOString()
   },
@@ -205,7 +269,7 @@ export const seedItems: MenuItem[] = [
     foodType: "veg",
     price: 149,
     rating: 4.6,
-    image: dishImage("aloo posto bengali potato poppy seed"),
+    image: getDishImage("Aloo Posto", "Bengali"),
     description: "Potatoes tossed in poppy seed paste with green chillies.",
     createdAt: new Date("2026-07-10").toISOString()
   },
@@ -217,7 +281,7 @@ export const seedItems: MenuItem[] = [
     foodType: "veg",
     price: 139,
     rating: 4.7,
-    image: dishImage("luchi alur dom bengali"),
+    image: getDishImage("Luchi with Alur Dom", "Bengali"),
     description: "Soft fried luchis served with spicy Bengali potato curry.",
     createdAt: new Date("2026-07-11").toISOString()
   },
@@ -229,7 +293,7 @@ export const seedItems: MenuItem[] = [
     foodType: "veg",
     price: 179,
     rating: 4.6,
-    image: dishImage("basanti pulao bengali rice"),
+    image: getDishImage("Basanti Pulao", "Bengali"),
     description: "Sweet yellow pulao with ghee, cashews, raisins, and aromatic rice.",
     createdAt: new Date("2026-07-12").toISOString()
   },
@@ -241,7 +305,7 @@ export const seedItems: MenuItem[] = [
     foodType: "non veg",
     price: 169,
     rating: 4.7,
-    image: dishImage("kolkata fish fry"),
+    image: getDishImage("Kolkata Fish Fry", "Snacks"),
     description: "Bhetki-style fillet crumb-fried until crisp with kasundi dip.",
     createdAt: new Date("2026-07-13").toISOString()
   },
@@ -253,7 +317,7 @@ export const seedItems: MenuItem[] = [
     foodType: "veg",
     price: 79,
     rating: 4.8,
-    image: dishImage("mishti doi bengali dessert"),
+    image: getDishImage("Mishti Doi", "Desserts"),
     description: "Caramel-toned sweet yogurt set thick and served chilled.",
     createdAt: new Date("2026-07-14").toISOString()
   },
@@ -265,7 +329,7 @@ export const seedItems: MenuItem[] = [
     foodType: "veg",
     price: 69,
     rating: 4.7,
-    image: dishImage("rosogolla bengali sweet"),
+    image: getDishImage("Soft Rosogolla", "Desserts"),
     description: "Spongy chhena sweets soaked in light cardamom sugar syrup.",
     createdAt: new Date("2026-07-15").toISOString()
   },
@@ -277,7 +341,7 @@ export const seedItems: MenuItem[] = [
     foodType: "non veg",
     price: 129,
     rating: 4.8,
-    image: dishImage("kolkata egg chicken roll"),
+    image: getDishImage("Kolkata Egg Chicken Roll", "Fast Food"),
     description: "Flaky paratha wrapped with egg, chicken, onions, chilli, and sauces.",
     createdAt: new Date("2026-07-16").toISOString()
   },
@@ -289,7 +353,7 @@ export const seedItems: MenuItem[] = [
     foodType: "non veg",
     price: 159,
     rating: 4.6,
-    image: dishImage("mughlai paratha"),
+    image: getDishImage("Mughlai Paratha", "Fast Food"),
     description: "Stuffed fried paratha with minced filling, egg, salad, and kasundi.",
     createdAt: new Date("2026-07-17").toISOString()
   },
@@ -301,7 +365,7 @@ export const seedItems: MenuItem[] = [
     foodType: "non veg",
     price: 139,
     rating: 4.5,
-    image: dishImage("chicken momos"),
+    image: getDishImage("Steamed Chicken Momos", "Fast Food"),
     description: "Juicy dumplings served with spicy red chutney and clear soup.",
     createdAt: new Date("2026-07-18").toISOString()
   },
@@ -313,7 +377,7 @@ export const seedItems: MenuItem[] = [
     foodType: "veg",
     price: 149,
     rating: 4.4,
-    image: dishImage("veg hakka noodles"),
+    image: getDishImage("Veg Hakka Noodles", "Chinese"),
     description: "Wok-tossed noodles with crunchy vegetables and Indo-Chinese seasoning.",
     createdAt: new Date("2026-07-19").toISOString()
   },
@@ -325,7 +389,7 @@ export const seedItems: MenuItem[] = [
     foodType: "veg",
     price: 99,
     rating: 4.3,
-    image: dishImage("peri peri french fries"),
+    image: getDishImage("Peri Peri French Fries", "Fast Food"),
     description: "Golden fries tossed with tangy peri peri masala.",
     createdAt: new Date("2026-07-20").toISOString()
   },
@@ -337,7 +401,7 @@ export const seedItems: MenuItem[] = [
     foodType: "veg",
     price: 119,
     rating: 4.5,
-    image: dishImage("paneer kathi roll"),
+    image: getDishImage("Paneer Kathi Roll", "Fast Food"),
     description: "Soft paratha loaded with paneer tikka, onions, and mint sauce.",
     createdAt: new Date("2026-07-21").toISOString()
   },
@@ -349,15 +413,526 @@ export const seedItems: MenuItem[] = [
     foodType: "non veg",
     price: 179,
     rating: 4.5,
-    image: dishImage("crispy chicken sandwich"),
+    image: getDishImage("Crispy Chicken Sandwich", "Sandwiches"),
     description: "Toasted sandwich with crispy chicken, cheese, lettuce, and mayo.",
     createdAt: new Date("2026-07-22").toISOString()
+  },
+  {
+    id: "item-kolkata-fuchka",
+    shopId: "shop-fast-lane",
+    name: "Kolkata Fuchka",
+    category: "Snacks",
+    foodType: "veg",
+    price: 99,
+    rating: 4.6,
+    image: getDishImage("Kolkata Fuchka", "Snacks"),
+    description: "Crisp puris filled with spiced potato, tamarind water, and masala.",
+    createdAt: new Date("2026-07-23").toISOString()
+  },
+  {
+    id: "item-chicken-chaap",
+    shopId: "shop-bangla-bhoj",
+    name: "Chicken Chaap",
+    category: "Main Course",
+    foodType: "non veg",
+    price: 279,
+    rating: 4.7,
+    image: getDishImage("Chicken Chaap", "Main Course"),
+    description: "Rich Kolkata-style chicken in slow-cooked aromatic gravy.",
+    createdAt: new Date("2026-07-24").toISOString()
+  },
+  {
+    id: "item-nolen-gur-sandesh",
+    shopId: "shop-bangla-bhoj",
+    name: "Nolen Gur Sandesh",
+    category: "Desserts",
+    foodType: "veg",
+    price: 99,
+    rating: 4.8,
+    image: getDishImage("Nolen Gur Sandesh", "Desserts"),
+    description: "Soft chhena sandesh sweetened with fragrant date palm jaggery.",
+    createdAt: new Date("2026-07-25").toISOString()
+  },
+  {
+    id: "item-veg-thin-crust-pizza",
+    shopId: "shop-urban-bites",
+    name: "Veg Thin Crust Pizza",
+    category: "Pizza",
+    foodType: "veg",
+    price: 249,
+    rating: 4.4,
+    image: getDishImage("Veg Thin Crust Pizza", "Pizza"),
+    description: "Crisp thin crust topped with cheese, peppers, onion, and sweet corn.",
+    createdAt: new Date("2026-07-26").toISOString()
+  },
+  {
+    id: "item-crispy-chicken-burger",
+    shopId: "shop-urban-bites",
+    name: "Crispy Chicken Burger",
+    category: "Burgers",
+    foodType: "non veg",
+    price: 209,
+    rating: 4.5,
+    image: getDishImage("Crispy Chicken Burger", "Burgers"),
+    description: "Crunchy chicken patty layered with cheese, lettuce, and house sauce.",
+    createdAt: new Date("2026-07-27").toISOString()
+  },
+  {
+    id: "item-dhokar-dalna",
+    shopId: "shop-bangla-bhoj",
+    name: "Dhokar Dalna",
+    category: "Bengali",
+    foodType: "veg",
+    price: 189,
+    rating: 4.6,
+    image: getDishImage("Dhokar Dalna", "Bengali"),
+    description: "Fried lentil cakes simmered in a spiced Bengali tomato gravy.",
+    createdAt: new Date("2026-07-28").toISOString()
+  },
+  {
+    id: "item-idli-sambar",
+    shopId: "shop-spice-square",
+    name: "Idli Sambar",
+    category: "South Indian",
+    foodType: "veg",
+    price: 129,
+    rating: 4.5,
+    image: getDishImage("Idli Sambar", "South Indian"),
+    description: "Soft steamed idlis served with lentil sambar and coconut chutney.",
+    createdAt: new Date("2026-07-29").toISOString()
+  },
+  {
+    id: "item-dal-makhani",
+    shopId: "shop-spice-square",
+    name: "Dal Makhani",
+    category: "North Indian",
+    foodType: "veg",
+    price: 199,
+    rating: 4.7,
+    image: getDishImage("Dal Makhani", "North Indian"),
+    description: "Black lentils slow-simmered with butter, cream, and warm spices.",
+    createdAt: new Date("2026-07-30").toISOString()
+  },
+  {
+    id: "item-chilli-chicken",
+    shopId: "shop-fast-lane",
+    name: "Chilli Chicken",
+    category: "Chinese",
+    foodType: "non veg",
+    price: 219,
+    rating: 4.5,
+    image: getDishImage("Chilli Chicken", "Chinese"),
+    description: "Indo-Chinese chicken tossed with peppers, onion, and chilli sauce.",
+    createdAt: new Date("2026-07-31").toISOString()
+  },
+  {
+    id: "item-grilled-cheese-sandwich",
+    shopId: "shop-fast-lane",
+    name: "Grilled Cheese Sandwich",
+    category: "Sandwiches",
+    foodType: "veg",
+    price: 139,
+    rating: 4.4,
+    image: getDishImage("Grilled Cheese Sandwich", "Sandwiches"),
+    description: "Buttery grilled bread packed with melted cheese and herbs.",
+    createdAt: new Date("2026-08-01").toISOString()
+  },
+  {
+    id: "item-veg-spring-rolls",
+    shopId: "shop-fast-lane",
+    name: "Veg Spring Rolls",
+    category: "Fast Food",
+    foodType: "veg",
+    price: 129,
+    rating: 4.4,
+    image: getDishImage("Veg Spring Rolls", "Fast Food"),
+    description: "Crispy rolls filled with seasoned vegetables and served with dip.",
+    createdAt: new Date("2026-08-02").toISOString()
+  },
+  {
+    id: "item-masala-chai",
+    shopId: "shop-chai-corner",
+    name: "Masala Chai",
+    category: "Tea Break",
+    foodType: "veg",
+    price: 49,
+    rating: 4.6,
+    image: getDishImage("Masala Chai", "Tea Break"),
+    description: "Hot milk tea brewed with ginger, cardamom, clove, and tea masala.",
+    createdAt: new Date("2026-08-03").toISOString()
+  },
+  {
+    id: "item-rajma-chawal",
+    shopId: "shop-spice-square",
+    name: "Rajma Chawal",
+    category: "North Indian",
+    foodType: "veg",
+    price: 179,
+    rating: 4.6,
+    image: getDishImage("Rajma Chawal", "North Indian"),
+    description: "Kidney bean curry served with steamed rice and onion salad.",
+    createdAt: new Date("2026-08-04").toISOString()
+  },
+  {
+    id: "item-pav-bhaji",
+    shopId: "shop-fast-lane",
+    name: "Pav Bhaji",
+    category: "Fast Food",
+    foodType: "veg",
+    price: 149,
+    rating: 4.6,
+    image: getDishImage("Pav Bhaji", "Fast Food"),
+    description: "Buttery mashed vegetable bhaji served with toasted pav and onions.",
+    createdAt: new Date("2026-08-05").toISOString()
+  },
+  {
+    id: "item-medu-vada",
+    shopId: "shop-spice-square",
+    name: "Medu Vada",
+    category: "South Indian",
+    foodType: "veg",
+    price: 119,
+    rating: 4.5,
+    image: getDishImage("Medu Vada", "South Indian"),
+    description: "Crisp lentil vadas served with sambar and coconut chutney.",
+    createdAt: new Date("2026-08-06").toISOString()
+  },
+  {
+    id: "item-gulab-jamun",
+    shopId: "shop-bangla-bhoj",
+    name: "Gulab Jamun",
+    category: "Desserts",
+    foodType: "veg",
+    price: 89,
+    rating: 4.7,
+    image: getDishImage("Gulab Jamun", "Desserts"),
+    description: "Warm khoya dumplings soaked in cardamom rose sugar syrup.",
+    createdAt: new Date("2026-08-07").toISOString()
+  },
+  {
+    id: "item-veg-manchurian",
+    shopId: "shop-fast-lane",
+    name: "Veg Manchurian",
+    category: "Chinese",
+    foodType: "veg",
+    price: 169,
+    rating: 4.4,
+    image: getDishImage("Veg Manchurian", "Chinese"),
+    description: "Vegetable dumplings tossed in tangy Indo-Chinese gravy.",
+    createdAt: new Date("2026-08-08").toISOString()
+  },
+  {
+    id: "item-bbq-chicken-pizza",
+    shopId: "shop-urban-bites",
+    name: "BBQ Chicken Pizza",
+    category: "Pizza",
+    foodType: "non veg",
+    price: 289,
+    rating: 4.5,
+    image: getDishImage("BBQ Chicken Pizza", "Pizza"),
+    description: "Smoky barbecue chicken, cheese, onion, and herbs on a crisp base.",
+    createdAt: new Date("2026-08-09").toISOString()
+  },
+  {
+    id: "item-veggie-burger",
+    shopId: "shop-urban-bites",
+    name: "Veggie Burger",
+    category: "Burgers",
+    foodType: "veg",
+    price: 159,
+    rating: 4.4,
+    image: getDishImage("Veggie Burger", "Burgers"),
+    description: "Bean patty burger with cheese, lettuce, tomato, and tangy sauce.",
+    createdAt: new Date("2026-08-10").toISOString()
+  },
+  {
+    id: "item-egg-mayo-sandwich",
+    shopId: "shop-fast-lane",
+    name: "Egg Mayo Sandwich",
+    category: "Sandwiches",
+    foodType: "non veg",
+    price: 129,
+    rating: 4.3,
+    image: getDishImage("Egg Mayo Sandwich", "Sandwiches"),
+    description: "Creamy egg mayo layered in toasted bread with pepper and herbs.",
+    createdAt: new Date("2026-08-11").toISOString()
+  },
+  {
+    id: "item-tandoori-chicken",
+    shopId: "shop-spice-square",
+    name: "Tandoori Chicken",
+    category: "Main Course",
+    foodType: "non veg",
+    price: 299,
+    rating: 4.8,
+    image: getDishImage("Tandoori Chicken", "Main Course"),
+    description: "Charred yogurt-marinated chicken with smoky tandoori spices.",
+    createdAt: new Date("2026-08-12").toISOString()
+  },
+  {
+    id: "item-chicken-lollipop",
+    shopId: "shop-fast-lane",
+    name: "Chicken Lollipop",
+    category: "Snacks",
+    foodType: "non veg",
+    price: 189,
+    rating: 4.6,
+    image: getDishImage("Chicken Lollipop", "Snacks"),
+    description: "Crispy fried chicken lollipops served with spicy dipping sauce.",
+    createdAt: new Date("2026-08-13").toISOString()
+  },
+  {
+    id: "item-dragon-wok-hakka-noodles",
+    shopId: "shop-dragon-wok",
+    name: "Veg Hakka Noodles",
+    category: "Chinese",
+    foodType: "veg",
+    price: 159,
+    rating: 4.5,
+    image: getDishImage("Veg Hakka Noodles", "Chinese"),
+    description: "Wok-tossed noodles with peppers, spring onion, and classic Indo-Chinese seasoning.",
+    createdAt: new Date("2026-08-14").toISOString()
+  },
+  {
+    id: "item-dragon-wok-chilli-chicken",
+    shopId: "shop-dragon-wok",
+    name: "Chilli Chicken",
+    category: "Chinese",
+    foodType: "non veg",
+    price: 229,
+    rating: 4.6,
+    image: getDishImage("Chilli Chicken", "Chinese"),
+    description: "Crispy chicken tossed with onion, capsicum, soy, garlic, and chilli sauce.",
+    createdAt: new Date("2026-08-15").toISOString()
+  },
+  {
+    id: "item-dragon-wok-veg-manchurian",
+    shopId: "shop-dragon-wok",
+    name: "Veg Manchurian",
+    category: "Chinese",
+    foodType: "veg",
+    price: 179,
+    rating: 4.4,
+    image: getDishImage("Veg Manchurian", "Chinese"),
+    description: "Vegetable dumplings finished in a tangy garlic-soy gravy.",
+    createdAt: new Date("2026-08-16").toISOString()
+  },
+  {
+    id: "item-dosa-darbar-masala-dosa",
+    shopId: "shop-dosa-darbar",
+    name: "Masala Dosa",
+    category: "South Indian",
+    foodType: "veg",
+    price: 149,
+    rating: 4.7,
+    image: getDishImage("Masala Dosa", "South Indian"),
+    description: "Crisp dosa stuffed with spiced potato and served with sambar and chutneys.",
+    createdAt: new Date("2026-08-17").toISOString()
+  },
+  {
+    id: "item-dosa-darbar-idli-sambar",
+    shopId: "shop-dosa-darbar",
+    name: "Idli Sambar",
+    category: "South Indian",
+    foodType: "veg",
+    price: 119,
+    rating: 4.5,
+    image: getDishImage("Idli Sambar", "South Indian"),
+    description: "Soft idlis with hot sambar and coconut chutney.",
+    createdAt: new Date("2026-08-18").toISOString()
+  },
+  {
+    id: "item-dosa-darbar-medu-vada",
+    shopId: "shop-dosa-darbar",
+    name: "Medu Vada",
+    category: "South Indian",
+    foodType: "veg",
+    price: 109,
+    rating: 4.5,
+    image: getDishImage("Medu Vada", "South Indian"),
+    description: "Crisp lentil vadas with sambar, coconut chutney, and tomato chutney.",
+    createdAt: new Date("2026-08-19").toISOString()
+  },
+  {
+    id: "item-sweet-slice-chocolate-pastry",
+    shopId: "shop-sweet-slice",
+    name: "Chocolate Pastry",
+    category: "Desserts",
+    foodType: "veg",
+    price: 119,
+    rating: 4.5,
+    image: getDishImage("Chocolate Pastry", "Desserts"),
+    description: "Soft chocolate cake layered with cream, glaze, and crunchy nuts.",
+    createdAt: new Date("2026-08-20").toISOString()
+  },
+  {
+    id: "item-sweet-slice-gulab-jamun",
+    shopId: "shop-sweet-slice",
+    name: "Gulab Jamun",
+    category: "Desserts",
+    foodType: "veg",
+    price: 89,
+    rating: 4.7,
+    image: getDishImage("Gulab Jamun", "Desserts"),
+    description: "Warm khoya dumplings soaked in cardamom sugar syrup.",
+    createdAt: new Date("2026-08-21").toISOString()
+  },
+  {
+    id: "item-sandwich-studio-grilled-cheese",
+    shopId: "shop-sandwich-studio",
+    name: "Grilled Cheese Sandwich",
+    category: "Sandwiches",
+    foodType: "veg",
+    price: 139,
+    rating: 4.5,
+    image: getDishImage("Grilled Cheese Sandwich", "Sandwiches"),
+    description: "Buttery grilled bread filled with melted cheese and herbs.",
+    createdAt: new Date("2026-08-22").toISOString()
+  },
+  {
+    id: "item-sandwich-studio-egg-mayo",
+    shopId: "shop-sandwich-studio",
+    name: "Egg Mayo Sandwich",
+    category: "Sandwiches",
+    foodType: "non veg",
+    price: 129,
+    rating: 4.4,
+    image: getDishImage("Egg Mayo Sandwich", "Sandwiches"),
+    description: "Creamy egg mayo and pepper layered in toasted bread.",
+    createdAt: new Date("2026-08-23").toISOString()
+  },
+  {
+    id: "item-biryani-baari-chicken-biryani",
+    shopId: "shop-biryani-baari",
+    name: "Kolkata Chicken Biryani",
+    category: "Main Course",
+    foodType: "non veg",
+    price: 319,
+    rating: 4.9,
+    image: getDishImage("Kolkata Chicken Biryani", "Main Course"),
+    description: "Fragrant Kolkata biryani with chicken, potato, rice, and gentle spices.",
+    createdAt: new Date("2026-08-24").toISOString()
+  },
+  {
+    id: "item-biryani-baari-chicken-chaap",
+    shopId: "shop-biryani-baari",
+    name: "Chicken Chaap",
+    category: "Main Course",
+    foodType: "non veg",
+    price: 289,
+    rating: 4.7,
+    image: getDishImage("Chicken Chaap", "Main Course"),
+    description: "Kolkata-style chicken in a rich slow-cooked Mughlai gravy.",
+    createdAt: new Date("2026-08-25").toISOString()
+  },
+  {
+    id: "item-fuchka-factory-kolkata-fuchka",
+    shopId: "shop-fuchka-factory",
+    name: "Kolkata Fuchka",
+    category: "Snacks",
+    foodType: "veg",
+    price: 99,
+    rating: 4.7,
+    image: getDishImage("Kolkata Fuchka", "Snacks"),
+    description: "Crisp puris filled with spiced potato and tangy tamarind water.",
+    createdAt: new Date("2026-08-26").toISOString()
+  },
+  {
+    id: "item-fuchka-factory-spring-rolls",
+    shopId: "shop-fuchka-factory",
+    name: "Veg Spring Rolls",
+    category: "Fast Food",
+    foodType: "veg",
+    price: 129,
+    rating: 4.4,
+    image: getDishImage("Veg Spring Rolls", "Fast Food"),
+    description: "Crispy rolls stuffed with seasoned vegetables and served with dip.",
+    createdAt: new Date("2026-08-27").toISOString()
+  },
+  {
+    id: "item-tandoor-trails-tandoori-chicken",
+    shopId: "shop-tandoor-trails",
+    name: "Tandoori Chicken",
+    category: "Main Course",
+    foodType: "non veg",
+    price: 309,
+    rating: 4.8,
+    image: getDishImage("Tandoori Chicken", "Main Course"),
+    description: "Smoky yogurt-marinated chicken finished with tandoori masala.",
+    createdAt: new Date("2026-08-28").toISOString()
+  },
+  {
+    id: "item-tandoor-trails-dal-makhani",
+    shopId: "shop-tandoor-trails",
+    name: "Dal Makhani",
+    category: "North Indian",
+    foodType: "veg",
+    price: 209,
+    rating: 4.7,
+    image: getDishImage("Dal Makhani", "North Indian"),
+    description: "Black lentils simmered with butter, cream, and warm spices.",
+    createdAt: new Date("2026-08-29").toISOString()
+  },
+  {
+    id: "item-mishti-mahal-rosogolla",
+    shopId: "shop-mishti-mahal",
+    name: "Soft Rosogolla",
+    category: "Desserts",
+    foodType: "veg",
+    price: 75,
+    rating: 4.8,
+    image: getDishImage("Soft Rosogolla", "Desserts"),
+    description: "Spongy chhena sweets soaked in light cardamom sugar syrup.",
+    createdAt: new Date("2026-08-30").toISOString()
+  },
+  {
+    id: "item-mishti-mahal-sandesh",
+    shopId: "shop-mishti-mahal",
+    name: "Nolen Gur Sandesh",
+    category: "Desserts",
+    foodType: "veg",
+    price: 105,
+    rating: 4.8,
+    image: getDishImage("Nolen Gur Sandesh", "Desserts"),
+    description: "Soft chhena sandesh sweetened with date palm jaggery.",
+    createdAt: new Date("2026-08-31").toISOString()
+  },
+  {
+    id: "item-mishti-mahal-mishti-doi",
+    shopId: "shop-mishti-mahal",
+    name: "Mishti Doi",
+    category: "Desserts",
+    foodType: "veg",
+    price: 85,
+    rating: 4.8,
+    image: getDishImage("Mishti Doi", "Desserts"),
+    description: "Caramel-toned sweet yogurt set thick and served chilled.",
+    createdAt: new Date("2026-09-01").toISOString()
   }
 ];
 
-export const seedData: FoodistarData = {
+export const seedData: RasoiGoData = {
+  users: [
+    {
+      uid: "admin-local",
+      fullName: "RasoiGo Admin",
+      email: "admin@gmail.com",
+      role: "admin",
+      createdAt: new Date("2026-07-15").toISOString()
+    }
+  ],
   shops: seedShops,
   items: seedItems,
   orders: [],
-  favoritesByUser: {}
+  favoritesByUser: {},
+  addressesByUser: {},
+  recentSearchesByUser: {},
+  coupons: [
+    { code: "RASOI50", label: "Rs 50 off above Rs 299", minOrder: 299, discount: 50, active: true },
+    { code: "BENGAL100", label: "Rs 100 off above Rs 699", minOrder: 699, discount: 100, active: true },
+    { code: "SNACK25", label: "Rs 25 off above Rs 149", minOrder: 149, discount: 25, active: true }
+  ],
+  wallet: [],
+  notifications: [],
+  reviews: []
 };

@@ -9,9 +9,16 @@ export function Preloader() {
       <motion.div
         initial={{ opacity: 0, scale: 0.96, y: 12 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        className="w-full max-w-sm rounded-lg border border-orange-100 bg-white p-6 text-center shadow-xl shadow-orange-950/10"
+        className="relative flex h-72 w-72 flex-col items-center justify-center rounded-full border border-orange-100 bg-white p-6 text-center shadow-xl shadow-orange-950/10"
       >
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-lg bg-[#f04423] text-white shadow-lg shadow-orange-200">
+        <motion.div
+          aria-hidden="true"
+          className="absolute inset-3 rounded-full border-4 border-orange-50 border-t-[#f04423]"
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1.15, repeat: Infinity, ease: "linear" }}
+        />
+
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#f04423] text-white shadow-lg shadow-orange-200">
           <motion.div
             animate={{ rotate: [0, -10, 10, -6, 6, 0], scale: [1, 1.08, 1] }}
             transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut" }}
@@ -22,7 +29,7 @@ export function Preloader() {
 
         <div className="mt-5 flex items-center justify-center gap-2">
           <Flame size={18} className="text-[#f04423]" />
-          <p className="text-lg font-black tracking-tight text-[#f04423]">Loading FOODISTAR</p>
+          <p className="text-lg font-black tracking-tight text-[#f04423]">Loading RasoiGo</p>
         </div>
 
         <div className="mt-4 flex justify-center gap-1.5">
@@ -36,14 +43,7 @@ export function Preloader() {
           ))}
         </div>
 
-        <div className="mt-5 h-2 overflow-hidden rounded-full bg-orange-50">
-          <motion.div
-            className="h-full rounded-full bg-[#f04423]"
-            initial={{ x: "-100%" }}
-            animate={{ x: ["-100%", "120%"] }}
-            transition={{ duration: 1.25, repeat: Infinity, ease: "easeInOut" }}
-          />
-        </div>
+        <p className="mt-4 text-xs font-bold uppercase tracking-[0.18em] text-slate-400">Please wait</p>
       </motion.div>
     </main>
   );

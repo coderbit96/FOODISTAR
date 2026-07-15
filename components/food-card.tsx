@@ -4,14 +4,15 @@ import { Heart, Minus, Plus, ShoppingCart, Star } from "lucide-react";
 import { motion } from "framer-motion";
 import { useState } from "react";
 import { clsx } from "clsx";
-import { useFoodistar } from "@/components/app-provider";
+import { useRasoiGo } from "@/components/app-provider";
 import { FoodImage } from "@/components/food-image";
 import type { MenuItem } from "@/lib/types";
 
 export function FoodCard({ item }: { item: MenuItem }) {
-  const { addToCart, toggleFavorite, favorites } = useFoodistar();
+  const { addToCart, toggleFavorite, favorites, profile } = useRasoiGo();
   const [quantity, setQuantity] = useState(1);
   const favorite = favorites.includes(item.id);
+  const canOrder = profile?.role === "user";
 
   return (
     <motion.article
@@ -23,13 +24,15 @@ export function FoodCard({ item }: { item: MenuItem }) {
     >
       <div className="relative h-44 overflow-hidden bg-orange-50">
         <FoodImage src={item.image} name={item.name} category={item.category} className="h-full w-full object-cover transition duration-500 hover:scale-105" />
-        <button
-          className="brand-focus absolute left-3 top-3 rounded-lg bg-white p-2 text-[#f04423] shadow"
-          onClick={() => toggleFavorite(item.id)}
-          aria-label="Toggle favorite"
-        >
-          <Heart size={18} fill={favorite ? "currentColor" : "none"} />
-        </button>
+        {canOrder && (
+          <button
+            className="brand-focus absolute left-3 top-3 rounded-lg bg-white p-2 text-[#f04423] shadow"
+            onClick={() => toggleFavorite(item.id)}
+            aria-label="Toggle favorite"
+          >
+            <Heart size={18} fill={favorite ? "currentColor" : "none"} />
+          </button>
+        )}
         <span
           className={clsx(
             "absolute right-3 top-3 rounded-lg px-2 py-1 text-xs font-black uppercase",
@@ -57,30 +60,32 @@ export function FoodCard({ item }: { item: MenuItem }) {
             {item.rating.toFixed(1)}
           </div>
 
-          <div className="flex items-center overflow-hidden rounded-lg border border-slate-200">
-            <button
-              className="brand-focus p-2 text-slate-700 hover:bg-slate-50"
-              onClick={() => setQuantity((value) => Math.max(1, value - 1))}
-              aria-label="Decrease quantity"
-            >
-              <Minus size={14} />
-            </button>
-            <span className="w-8 text-center text-sm font-black">{quantity}</span>
-            <button
-              className="brand-focus p-2 text-slate-700 hover:bg-slate-50"
-              onClick={() => setQuantity((value) => value + 1)}
-              aria-label="Increase quantity"
-            >
-              <Plus size={14} />
-            </button>
-            <button
-              className="brand-focus bg-[#f04423] p-2 text-white"
-              onClick={() => addToCart(item, quantity)}
-              aria-label="Add to cart"
-            >
-              <ShoppingCart size={16} />
-            </button>
-          </div>
+          {canOrder && (
+            <div className="flex items-center overflow-hidden rounded-lg border border-slate-200">
+              <button
+                className="brand-focus p-2 text-slate-700 hover:bg-slate-50"
+                onClick={() => setQuantity((value) => Math.max(1, value - 1))}
+                aria-label="Decrease quantity"
+              >
+                <Minus size={14} />
+              </button>
+              <span className="w-8 text-center text-sm font-black">{quantity}</span>
+              <button
+                className="brand-focus p-2 text-slate-700 hover:bg-slate-50"
+                onClick={() => setQuantity((value) => value + 1)}
+                aria-label="Increase quantity"
+              >
+                <Plus size={14} />
+              </button>
+              <button
+                className="brand-focus bg-[#f04423] p-2 text-white"
+                onClick={() => addToCart(item, quantity)}
+                aria-label="Add to cart"
+              >
+                <ShoppingCart size={16} />
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </motion.article>
