@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { CheckCircle2, Clock3, MapPin, PackageCheck, Star, Truck, XCircle } from "lucide-react";
+import { CheckCircle2, Clock3, MapPin, PackageCheck, Phone, Star, Truck, UserRound, XCircle } from "lucide-react";
 import { clsx } from "clsx";
 import { useMemo, useState } from "react";
 import { ProtectedPage } from "@/components/protected-page";
@@ -106,7 +106,7 @@ export default function OrdersPage() {
   const actionFor = (status: OrderStatus): { label: string; next: OrderStatus } | null => {
     if (profile?.role === "owner") {
       if (status === "pending") return { label: "Accept order", next: "received" };
-      if (status === "received") return { label: "Start preparing", next: "preparing" };
+      if (status === "received") return { label: "Order processing", next: "preparing" };
       if (status === "preparing") return { label: "Ready for delivery", next: "out-for-delivery" };
       return null;
     }
@@ -156,6 +156,15 @@ export default function OrdersPage() {
               .filter(Boolean)
               .join(", ");
             const packageCount = order.items.reduce((total, item) => total + item.quantity, 0);
+            const deliveryPartner = order.deliveryPartnerId
+              ? data.users.find((user) => user.uid === order.deliveryPartnerId)
+              : undefined;
+            const customer = data.users.find((user) => user.uid === order.userId);
+            const ownerOrderSubtotal = visibleItems.reduce((total, item) => total + item.price * item.quantity, 0);
+            const deliveryLocation = order.deliveryLocation;
+            const mapUrl = deliveryLocation
+              ? `https://www.openstreetmap.org/export/embed.html?bbox=${deliveryLocation.lng - 0.01}%2C${deliveryLocation.lat - 0.01}%2C${deliveryLocation.lng + 0.01}%2C${deliveryLocation.lat + 0.01}&layer=mapnik&marker=${deliveryLocation.lat}%2C${deliveryLocation.lng}`
+              : "";
 
             return (
               <article key={order.id} className="rounded-lg border border-orange-100 bg-white p-5 shadow-sm">
@@ -188,7 +197,7 @@ export default function OrdersPage() {
                         {action.label}
                       </button>
                     )}
-                    {profile?.role === "delivery" && !order.deliveryPartnerId && ["received", "preparing", "out-for-delivery"].includes(order.status) && (
+                    {profile?.role === "delivery" && !order.deliveryPartnerId && ["pending", "received", "preparing", "out-for-delivery"].includes(order.status) && (
                       <button
                         className="brand-focus rounded-lg bg-[#f04423] px-3 py-2 text-sm font-black text-white"
                         onClick={() => {
@@ -258,13 +267,96 @@ export default function OrdersPage() {
                     ))}
                   </div>
                 )}
+                {profile?.role === "owner" && (
+                  <div className="mt-4 grid gap-3 md:grid-cols-3">
+                    <div className="rounded-lg border border-orange-100 bg-orange-50 p-3 text-sm">
+                      <p className="flex items-center gap-2 text-xs font-black uppercase text-slate-500">
+                        <UserRound size={15} className="text-[#f04423]" />
+                        Customer
+                      </p>
+                      <p className="mt-2 font-black text-slate-950">{customer?.fullName || "Customer"}</p>
+                      <p className="mt-1 text-xs font-semibold text-slate-600">{customer?.mobile || "No mobile added"}</p>
+                      <p className="mt-1 break-all text-xs font-semibold text-slate-500">{customer?.email || order.userId}</p>
+                    </div>
+                    <div className="rounded-lg border border-sky-100 bg-sky-50 p-3 text-sm">
+                      <p className="flex items-center gap-2 text-xs font-black uppercase text-slate-500">
+                        <Truck size={15} className="text-[#f04423]" />
+                        Delivery partner
+                      </p>
+                      <p className="mt-2 font-black text-slate-950">{deliveryPartner?.fullName || order.deliveryPartnerName || "Not accepted yet"}</p>
+                      <p className="mt-1 text-xs font-semibold text-slate-600">{deliveryPartner?.mobile || "Phone available after accept"}</p>
+                      <p className="mt-1 text-xs font-semibold text-slate-500">
+                        {order.deliveryPartnerId ? "Partner accepted pickup" : "Waiting for delivery partner"}
+                      </p>
+                    </div>
+                    <div className="rounded-lg border border-slate-100 bg-slate-50 p-3 text-sm">
+                      <p className="text-xs font-black uppercase text-slate-500">Owner order summary</p>
+                      <p className="mt-2 font-black text-slate-950">Shop items: Rs {ownerOrderSubtotal}</p>
+                      <p className="mt-1 text-xs font-semibold text-slate-600">{packageCount} total package items</p>
+                      <p className="mt-1 text-xs font-semibold capitalize text-slate-500">{order.paymentMethod === "cash" ? "Cash order" : "Online paid"} . {order.status.replaceAll("-", " ")}</p>
+                    </div>
+                  </div>
+                )}
                 <p className="mt-4 text-sm leading-6 text-slate-500">{order.address}</p>
                 {order.scheduledFor && <p className="mt-1 text-sm font-bold text-slate-600">Scheduled: {new Date(order.scheduledFor).toLocaleString()}</p>}
                 {order.couponCode && <p className="mt-1 text-sm font-bold text-emerald-700">Coupon {order.couponCode} saved Rs {order.discount || 0}</p>}
-                {profile?.role === "user" && order.deliveryLocation && (
-                  <div className="mt-4 rounded-lg bg-sky-50 p-3 text-sm text-sky-800">
-                    <MapPin className="mr-1 inline" size={16} />
-                    Partner location: {order.deliveryLocation.lat}, {order.deliveryLocation.lng} updated {new Date(order.deliveryLocation.updatedAt).toLocaleTimeString()}
+                {profile?.role === "user" && !["cancelled", "delivered"].includes(order.status) && (
+                  <div className="mt-4 overflow-hidden rounded-lg border border-sky-100 bg-sky-50">
+                    <div className="grid gap-3 p-4 md:grid-cols-3">
+                      <div className="rounded-lg bg-white p-3 text-sm">
+                        <p className="flex items-center gap-2 text-xs font-black uppercase text-slate-400">
+                          <UserRound size={15} className="text-[#f04423]" />
+                          Delivery partner
+                        </p>
+                        <p className="mt-2 font-black text-slate-900">
+                          {deliveryPartner?.fullName || order.deliveryPartnerName || "Assigning soon"}
+                        </p>
+                        <p className="mt-1 text-xs font-semibold text-slate-500">
+                          {order.deliveryPartnerId ? "Accepted your order" : "Kitchen will assign a partner"}
+                        </p>
+                      </div>
+                      <div className="rounded-lg bg-white p-3 text-sm">
+                        <p className="flex items-center gap-2 text-xs font-black uppercase text-slate-400">
+                          <Phone size={15} className="text-[#f04423]" />
+                          Phone number
+                        </p>
+                        {deliveryPartner?.mobile ? (
+                          <a className="mt-2 block font-black text-slate-900 hover:text-[#f04423]" href={`tel:${deliveryPartner.mobile}`}>
+                            {deliveryPartner.mobile}
+                          </a>
+                        ) : (
+                          <p className="mt-2 font-black text-slate-900">Available after assignment</p>
+                        )}
+                      </div>
+                      <div className="rounded-lg bg-white p-3 text-sm">
+                        <p className="flex items-center gap-2 text-xs font-black uppercase text-slate-400">
+                          <MapPin size={15} className="text-[#f04423]" />
+                          Delivery status
+                        </p>
+                        <p className="mt-2 font-black text-slate-900">
+                          {deliveryLocation ? "Partner is on the way" : "Waiting for live location"}
+                        </p>
+                        <p className="mt-1 text-xs font-semibold text-slate-500">
+                          {deliveryLocation ? `Updated ${new Date(deliveryLocation.updatedAt).toLocaleTimeString()}` : `OTP: ${order.deliveryOtp}`}
+                        </p>
+                      </div>
+                    </div>
+                    {deliveryLocation && (
+                      <div className="border-t border-sky-100 bg-white">
+                        <iframe
+                          title={`Delivery map for ${order.id}`}
+                          className="h-64 w-full"
+                          src={mapUrl}
+                          loading="lazy"
+                        />
+                        <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-xs font-bold text-slate-500">
+                          <span>Current location: {deliveryLocation.lat}, {deliveryLocation.lng}</span>
+                          <a className="text-[#f04423]" href={`https://www.openstreetmap.org/?mlat=${deliveryLocation.lat}&mlon=${deliveryLocation.lng}#map=16/${deliveryLocation.lat}/${deliveryLocation.lng}`} target="_blank" rel="noreferrer">
+                            Open full map
+                          </a>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
                 {profile?.role === "user" && order.status === "delivered" && (

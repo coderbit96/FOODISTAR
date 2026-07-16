@@ -122,13 +122,13 @@ export default function OwnerPage() {
             <div className="rounded-lg bg-orange-50 p-3 text-[#f04423]"><Utensils /></div>
             <div>
               <h1 className="text-3xl font-black text-slate-950">Owner menu</h1>
-              <p className="text-sm text-slate-500">{ownerShop?.name || "A shop will be created automatically."}</p>
+              <p className="text-sm text-slate-500">{ownerShop?.name || "Add your shop details first, then list food items."}</p>
             </div>
           </div>
 
           <form className="mt-6 grid gap-4" onSubmit={submit}>
             <label>
-              <span className="text-sm font-black text-slate-700">Dish name</span>
+              <span className="text-sm font-black text-slate-700">Food item name</span>
               <input className="brand-focus mt-2 w-full rounded-lg border border-slate-200 px-3 py-3 text-sm" value={name} onChange={(event) => setName(event.target.value)} required />
             </label>
             <div className="grid gap-4 sm:grid-cols-3">
@@ -161,13 +161,21 @@ export default function OwnerPage() {
             </label>
             {message && <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{message}</p>}
             <button className="brand-focus rounded-lg bg-[#f04423] px-4 py-3 text-sm font-black text-white disabled:opacity-60" disabled={busy}>
-              {busy ? "Saving..." : "Save item"}
+              {busy ? "Saving..." : editingItemId ? "Update food item" : "List food item"}
             </button>
           </form>
         </section>
 
         <section className="rounded-lg border border-orange-100 bg-white p-5 shadow-sm">
-          <h2 className="text-2xl font-black text-slate-950">Shop settings</h2>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-2xl font-black text-slate-950">Add / edit shop</h2>
+            <button
+              className="brand-focus rounded-lg bg-slate-950 px-3 py-2 text-sm font-black text-white"
+              onClick={() => router.push("/orders")}
+            >
+              Kitchen orders
+            </button>
+          </div>
           <div className="mt-4 grid gap-3">
             <input className="brand-focus rounded-lg border border-slate-200 px-3 py-3 text-sm" value={shopName} onChange={(event) => setShopName(event.target.value)} placeholder={ownerShop?.name || "Shop name"} />
             <div className="grid gap-3 sm:grid-cols-3">

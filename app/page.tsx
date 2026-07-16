@@ -20,9 +20,7 @@ export default function HomePage() {
   const [priceRange, setPriceRange] = useState("all");
   const [minRating, setMinRating] = useState("0");
   const [sort, setSort] = useState("popular");
-  const [categoryScrollPaused, setCategoryScrollPaused] = useState(false);
   const [heroScrollPaused, setHeroScrollPaused] = useState(false);
-  const categoryScrollRef = useRef<HTMLDivElement | null>(null);
   const heroScrollRef = useRef<HTMLDivElement | null>(null);
 
   const filteredItems = useMemo(() => {
@@ -62,25 +60,6 @@ export default function HomePage() {
     return Array.from(new Set(terms)).filter((term) => term.toLowerCase().includes(query.trim().toLowerCase())).slice(0, 8);
   }, [data.items, data.shops, query, recentSearches]);
   const recommendedItems = useMemo(() => filteredItems.filter((item) => item.rating >= 4.7).slice(0, 4), [filteredItems]);
-
-  useEffect(() => {
-    const scroller = categoryScrollRef.current;
-    if (!scroller || categoryScrollPaused) return;
-
-    const timer = window.setInterval(() => {
-      const maxScroll = scroller.scrollWidth - scroller.clientWidth;
-      if (maxScroll <= 0) return;
-
-      if (scroller.scrollLeft >= maxScroll - 1) {
-        scroller.scrollTo({ left: 0 });
-        return;
-      }
-
-      scroller.scrollLeft += 1;
-    }, 24);
-
-    return () => window.clearInterval(timer);
-  }, [categoryScrollPaused]);
 
   useEffect(() => {
     const scroller = heroScrollRef.current;
@@ -309,8 +288,8 @@ export default function HomePage() {
             className="overflow-hidden rounded-lg border border-orange-100 bg-[#fff3cf] shadow-sm"
           >
             <div className="p-5 md:p-6">
-              <div className="relative flex min-h-[330px] flex-col gap-4 overflow-hidden md:min-h-[360px] md:flex-row md:items-end md:justify-between">
-                <div className="relative z-10 md:max-w-2xl md:pr-56 lg:pr-64">
+              <div className="relative flex min-h-[330px] flex-col gap-4 overflow-hidden md:min-h-[360px] md:flex-row md:items-start md:justify-between">
+                <div className="relative z-10 max-w-3xl md:pr-44 lg:max-w-4xl lg:pr-56">
                   <span className="mb-3 inline-flex rounded-lg bg-orange-50 px-3 py-1 text-xs font-black uppercase tracking-[0.18em] text-[#f04423]">
                     {heroCopy.badge}
                   </span>
@@ -437,14 +416,7 @@ export default function HomePage() {
           </div>
 
           <div
-            ref={categoryScrollRef}
             className="mt-4 flex gap-3 overflow-x-auto pb-2"
-            onMouseEnter={() => setCategoryScrollPaused(true)}
-            onMouseLeave={() => setCategoryScrollPaused(false)}
-            onTouchStart={() => setCategoryScrollPaused(true)}
-            onTouchEnd={() => setCategoryScrollPaused(false)}
-            onFocus={() => setCategoryScrollPaused(true)}
-            onBlur={() => setCategoryScrollPaused(false)}
           >
             {categories.map((entry) => (
               <button

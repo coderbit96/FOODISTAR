@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { SiteNav } from "@/components/site-nav";
 import { useRasoiGo } from "@/components/app-provider";
 import { Preloader } from "@/components/preloader";
+import { LoginOfferPopup } from "@/components/login-offer-popup";
 
 export function ProtectedPage({ children }: { children: React.ReactNode }) {
   const { profile, loading } = useRasoiGo();
@@ -21,6 +22,7 @@ export function ProtectedPage({ children }: { children: React.ReactNode }) {
   return (
     <div className="rasoigo-shell">
       <SiteNav />
+      <LoginOfferPopup />
       {children}
     </div>
   );

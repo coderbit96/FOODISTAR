@@ -2,17 +2,39 @@
 
 import { Heart, Minus, Plus, ShoppingCart, Star } from "lucide-react";
 import { motion } from "framer-motion";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { clsx } from "clsx";
 import { useRasoiGo } from "@/components/app-provider";
 import { FoodImage } from "@/components/food-image";
 import type { MenuItem } from "@/lib/types";
 
 export function FoodCard({ item }: { item: MenuItem }) {
-  const { addToCart, toggleFavorite, favorites, profile } = useRasoiGo();
-  const [quantity, setQuantity] = useState(1);
+  const router = useRouter();
+  const { addToCart, updateCartQuantity, cart, toggleFavorite, favorites, profile } = useRasoiGo();
   const favorite = favorites.includes(item.id);
   const canOrder = profile?.role === "user";
+  const cartItem = cart.find((entry) => entry.id === item.id);
+  const displayQuantity = cartItem?.quantity ?? 0;
+  const readyToCheckout = displayQuantity > 0;
+
+  const handleAddToCart = () => {
+    if (!readyToCheckout) return;
+    router.push("/checkout");
+  };
+
+  const handleDecreaseQuantity = () => {
+    if (cartItem) {
+      updateCartQuantity(item.id, cartItem.quantity - 1);
+    }
+  };
+
+  const handleIncreaseQuantity = () => {
+    if (cartItem) {
+      updateCartQuantity(item.id, cartItem.quantity + 1);
+      return;
+    }
+    addToCart(item, 1);
+  };
 
   return (
     <motion.article
@@ -64,23 +86,26 @@ export function FoodCard({ item }: { item: MenuItem }) {
             <div className="flex items-center overflow-hidden rounded-lg border border-slate-200">
               <button
                 className="brand-focus p-2 text-slate-700 hover:bg-slate-50"
-                onClick={() => setQuantity((value) => Math.max(1, value - 1))}
+                onClick={handleDecreaseQuantity}
                 aria-label="Decrease quantity"
               >
                 <Minus size={14} />
               </button>
-              <span className="w-8 text-center text-sm font-black">{quantity}</span>
+              <span className="w-8 text-center text-sm font-black">{displayQuantity}</span>
               <button
                 className="brand-focus p-2 text-slate-700 hover:bg-slate-50"
-                onClick={() => setQuantity((value) => value + 1)}
+                onClick={handleIncreaseQuantity}
                 aria-label="Increase quantity"
               >
                 <Plus size={14} />
               </button>
               <button
-                className="brand-focus bg-[#f04423] p-2 text-white"
-                onClick={() => addToCart(item, quantity)}
-                aria-label="Add to cart"
+                className={clsx(
+                  "brand-focus p-2 text-white transition-colors",
+                  readyToCheckout ? "bg-emerald-600" : "bg-[#f04423]"
+                )}
+                onClick={handleAddToCart}
+                aria-label={readyToCheckout ? "Go to checkout" : "Add to cart"}
               >
                 <ShoppingCart size={16} />
               </button>

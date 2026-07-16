@@ -217,6 +217,181 @@ html.dark .shadow-2xl {
   display: none;
 }
 
+.offer-pop {
+  overflow: visible;
+  animation: offer-pop-in 360ms ease-out;
+}
+
+.offer-confetti {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.offer-confetti span {
+  --edge: 6%;
+  --bottom: 18px;
+  --x: 34vw;
+  --y: -50vh;
+  --delay: 0ms;
+  --duration: 1600ms;
+  --spin: 520deg;
+  position: absolute;
+  left: var(--edge);
+  bottom: var(--bottom);
+  height: 13px;
+  width: 7px;
+  border-radius: 2px;
+  background: #f04423;
+  animation: offer-confetti-burst var(--duration) cubic-bezier(0.12, 0.72, 0.2, 1) infinite;
+  animation-delay: var(--delay);
+  transform: rotate(18deg);
+}
+
+.offer-confetti span.from-right {
+  left: auto;
+  right: var(--edge);
+}
+
+.offer-confetti span:nth-child(5n) {
+  height: 7px;
+  width: 7px;
+  border-radius: 999px;
+  background: #ec4899;
+}
+
+.offer-confetti span:nth-child(3n) {
+  width: 12px;
+  background: #ffc22e;
+}
+
+.offer-confetti span:nth-child(4n) {
+  height: 12px;
+  border-radius: 999px;
+  background: #10b981;
+}
+
+.offer-confetti span:nth-child(7n) {
+  height: 5px;
+  width: 18px;
+  background: #60a5fa;
+}
+
+.offer-sparkle {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+}
+
+.offer-sparkle span,
+.offer-floating-dots span {
+  --left: 50%;
+  --top: 30%;
+  --delay: 0ms;
+  --duration: 1900ms;
+  position: absolute;
+  border-radius: 999px;
+  background: #8bdbbd;
+}
+
+.offer-sparkle span {
+  left: var(--left);
+  top: var(--top);
+  height: 9px;
+  width: 9px;
+  animation: offer-sparkle-float var(--duration) ease-in-out infinite;
+  animation-delay: var(--delay);
+}
+
+.offer-badge {
+  animation: offer-badge-pulse 1500ms ease-in-out infinite;
+}
+
+.offer-floating-dots {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.offer-floating-dots span {
+  left: var(--left);
+  top: var(--top);
+  height: 8px;
+  width: 8px;
+  opacity: 0.6;
+  animation: offer-dot-drift 2500ms ease-in-out infinite;
+  animation-delay: var(--delay);
+}
+
+@keyframes offer-pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes offer-confetti-burst {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) rotate(0deg) scale(0.7);
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--x), var(--y)) rotate(var(--spin)) scale(1);
+  }
+}
+
+@keyframes offer-sparkle-float {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(0) scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-22px) scale(1.15);
+  }
+}
+
+@keyframes offer-badge-pulse {
+  0%,
+  100% {
+    transform: rotate(-4deg) scale(1);
+  }
+  50% {
+    transform: rotate(4deg) scale(1.08);
+  }
+}
+
+@keyframes offer-dot-drift {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .offer-pop,
+  .offer-confetti span,
+  .offer-sparkle span,
+  .offer-badge,
+  .offer-floating-dots span {
+    animation: none;
+  }
+}
+
 html.dark .theme-icon-light {
   display: none;
 }

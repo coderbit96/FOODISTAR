@@ -104,6 +104,7 @@ type AppContextValue = {
   markDeliveredWithOtp: (orderId: string, otp: string) => void;
   rateOrderItem: (orderId: string, itemId: string, rating: number) => void;
   reviewOrderShop: (orderId: string, shopId: string, rating: number, comment: string) => void;
+  clearNotifications: () => void;
   adminUpdateUserRole: (uid: string, role: UserRole) => void;
   adminToggleUserSuspended: (uid: string) => void;
   adminDeleteUser: (uid: string) => void;
@@ -257,6 +258,26 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     writeJson(CART_KEY, cart);
   }, [cart]);
 
+  useEffect(() => {
+    const refreshData = () => {
+      setData(mergeSeedData(readJson(DATA_KEY, seedData)));
+    };
+
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key === DATA_KEY) {
+        refreshData();
+      }
+    };
+
+    window.addEventListener("storage", handleStorage);
+    window.addEventListener("focus", refreshData);
+
+    return () => {
+      window.removeEventListener("storage", handleStorage);
+      window.removeEventListener("focus", refreshData);
+    };
+  }, []);
+
   const ownerShop = useMemo(() => {
     if (!profile) return null;
     return data.shops.find((shop) => shop.ownerId === profile.uid) || null;
@@ -368,7 +389,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       await sendPasswordResetEmail(auth, email);
     },
     logout: async () => {
-      if (typeof window !== "undefined") window.localStorage.removeItem(LOCAL_SESSION_KEY);
+      if (typeof window !== "undefined") {
+        window.localStorage.removeItem(LOCAL_SESSION_KEY);
+        window.sessionStorage.removeItem("rasoigo:login-offer-dismissed");
+      }
       await signOut(auth);
       setCart([]);
       setProfile(null);
@@ -488,6 +512,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const coupon = bestCoupon(cartTotal, data.coupons, couponCode);
       const deliveryFee = cartTotal >= 500 ? 0 : 40;
       const discount = coupon?.discount || 0;
+      const packageCount = cart.reduce((total, item) => total + item.quantity, 0);
       const order: Order = {
         id: makeId("order"),
         userId: profile.uid,
@@ -510,31 +535,59 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         createdAt: new Date().toISOString(),
         deliveryOtp: String(Math.floor(1000 + Math.random() * 9000))
       };
-      setData((current) => ({
-        ...current,
-        orders: [order, ...current.orders],
-        wallet: [
-          {
-            id: makeId("wallet"),
-            userId: profile.uid,
-            amount: -order.total,
-            label: `${paymentMethod === "razorpay" ? "Razorpay" : "Cash"} order ${order.id.slice(0, 10)}`,
-            createdAt: order.createdAt,
-            type: "order"
-          },
-          ...current.wallet
-        ],
-        notifications: [
-          {
+      setData((current) => {
+        const orderedShopIds = Array.from(new Set(order.items.map((item) => item.shopId)));
+        const ownerNotifications = Array.from(
+          new Set(
+            current.shops
+              .filter((shop) => orderedShopIds.includes(shop.id) && shop.ownerId)
+              .map((shop) => shop.ownerId as string)
+          )
+        ).map((ownerId) => ({
+          id: makeId("notification"),
+          userId: ownerId,
+          title: "New kitchen order",
+          body: `${profile.fullName} ordered ${packageCount} items. Open Kitchen orders to accept and process it.`,
+          createdAt: order.createdAt
+        }));
+        const deliveryNotifications = current.users
+          .filter((user) => user.role === "delivery" && !user.suspended)
+          .map((user) => ({
             id: makeId("notification"),
-            userId: profile.uid,
-            title: paymentMethod === "razorpay" ? "Payment successful" : "Order placed",
-            body: coupon ? `${coupon.code} applied. Kitchen will confirm soon.` : "Kitchen will confirm soon.",
+            userId: user.uid,
+            title: "New delivery request",
+            body: `Order ${order.id.slice(0, 10)} has ${packageCount} items for ${address}. Pick it up after kitchen confirmation.`,
             createdAt: order.createdAt
-          },
-          ...current.notifications
-        ]
-      }));
+          }));
+
+        return {
+          ...current,
+          orders: [order, ...current.orders],
+          wallet: [
+            {
+              id: makeId("wallet"),
+              userId: profile.uid,
+              amount: -order.total,
+              label: `${paymentMethod === "razorpay" ? "Razorpay" : "Cash"} order ${order.id.slice(0, 10)}`,
+              createdAt: order.createdAt,
+              type: "order"
+            },
+            ...current.wallet
+          ],
+          notifications: [
+            {
+              id: makeId("notification"),
+              userId: profile.uid,
+              title: paymentMethod === "razorpay" ? "Payment successful" : "Order placed",
+              body: coupon ? `${coupon.code} applied. Kitchen will confirm soon.` : "Kitchen will confirm soon.",
+              createdAt: order.createdAt
+            },
+            ...ownerNotifications,
+            ...deliveryNotifications,
+            ...current.notifications
+          ]
+        };
+      });
       setCart([]);
       return order;
     },
@@ -689,6 +742,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     acceptDeliveryOrder: (orderId) => {
       if (!profile || profile.role !== "delivery") throw new Error("Only delivery partners can accept orders.");
       setData((current) => {
+        const targetOrder = current.orders.find((order) => order.id === orderId);
+        if (!targetOrder) throw new Error("Order not found.");
+        if (["delivered", "cancelled"].includes(targetOrder.status)) {
+          throw new Error("This order is no longer available.");
+        }
+        if (targetOrder.deliveryPartnerId && targetOrder.deliveryPartnerId !== profile.uid) {
+          throw new Error("This order is already assigned.");
+        }
         const active = current.orders.some((order) =>
           order.deliveryPartnerId === profile.uid && order.status === "out-for-delivery"
         );
@@ -706,7 +767,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
                   deliveryLocation: { lat: 22.5726, lng: 88.3639, updatedAt: now }
                 }
               : order
-          )
+          ),
+          notifications: [
+            {
+              id: makeId("notification"),
+              userId: targetOrder.userId,
+              title: "Delivery partner assigned",
+              body: `${profile.fullName}${profile.mobile ? ` (${profile.mobile})` : ""} accepted your order and shared live delivery details.`,
+              createdAt: now
+            },
+            ...current.notifications
+          ]
         };
       });
     },
@@ -798,6 +869,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           )
         };
       });
+    },
+    clearNotifications: () => {
+      if (!profile) return;
+      setData((current) => ({
+        ...current,
+        notifications: current.notifications.filter((entry) => entry.userId !== profile.uid)
+      }));
     },
     adminUpdateUserRole: (uid, role) => {
       if (profile?.role !== "admin" || uid === "admin-local") return;
