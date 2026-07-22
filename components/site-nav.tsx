@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Bell, Heart, LogOut, Menu, PackageCheck, ShoppingCart, Store, Truck, UserRound, X } from "lucide-react";
+import { Bell, Heart, LogOut, Menu, PackageCheck, ShoppingCart, Store, Truck, UserRound, Wallet, X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
 import { clsx } from "clsx";
@@ -28,6 +28,7 @@ export function SiteNav() {
     user: [
       { href: "/", label: "Menu" },
       { href: "/orders", label: "My orders" },
+      { href: "/wallet", label: "Wallet" },
       { href: "/profile", label: "Profile" }
     ],
     owner: [
@@ -59,11 +60,14 @@ export function SiteNav() {
     router.push("/signin");
   };
   const isAdmin = profile.role === "admin";
+  const navActionClass = "navbar-action-button brand-focus relative inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg shadow-sm ring-1 transition";
+  const navBadgeClass = "navbar-count-badge pointer-events-none absolute flex h-5 min-w-5 items-center justify-center rounded-full bg-[#f04423] px-1 text-[11px] font-black leading-none text-white shadow-lg ring-2 ring-[#fff3cf]";
+  const cartBadgeClass = "navbar-count-badge pointer-events-none absolute right-0 top-0 flex h-5 min-w-5 translate-x-1/3 -translate-y-1/3 items-center justify-center rounded-full bg-[#f04423] px-1 text-[11px] font-black leading-none text-white shadow-lg shadow-red-500/30 ring-[3px] ring-[#fff3cf]";
 
   return (
-    <header className="rasoigo-navbar sticky top-0 z-30 border-b border-yellow-300 bg-[#ffcc1a] backdrop-blur">
+    <header className="rasoigo-navbar sticky top-0 z-30 border-b border-orange-100 bg-[#fff3cf] backdrop-blur">
       <div className="mx-auto flex min-h-16 w-full max-w-7xl items-center justify-between gap-4 px-4 py-3">
-        <Link href="/" className="text-2xl font-black tracking-wide text-[#f04423]">
+        <Link href="/" className="text-3xl font-black tracking-wide text-[#f04423]">
           RasoiGo
         </Link>
 
@@ -94,7 +98,7 @@ export function SiteNav() {
             <button
               type="button"
               className={clsx(
-                "brand-focus relative inline-flex h-11 w-11 items-center justify-center rounded-lg shadow-sm ring-1 transition",
+                navActionClass,
                 isAdmin
                   ? "bg-slate-950 text-white ring-slate-900 hover:bg-white hover:text-[#f04423] hover:ring-orange-200"
                   : "bg-white text-slate-700 ring-orange-100 hover:bg-orange-50",
@@ -105,7 +109,7 @@ export function SiteNav() {
             >
               <Bell size={20} />
               {userNotifications.length > 0 && (
-                <span className="absolute -right-1 -top-1 min-w-4 rounded-full bg-[#f04423] px-1 text-center text-[10px] font-black leading-4 text-white ring-2 ring-white">
+                <span className={clsx(navBadgeClass, "-right-1.5 -top-1.5")}>
                   {userNotifications.length}
                 </span>
               )}
@@ -144,12 +148,17 @@ export function SiteNav() {
             <>
               <Link
                 href="/favorites"
-                className="brand-focus relative inline-flex h-11 w-11 items-center justify-center rounded-lg bg-white text-[#f04423] shadow-sm ring-1 ring-orange-100 transition hover:bg-orange-50"
+                className={clsx(
+                  navActionClass,
+                  favorites.length > 0
+                    ? "bg-emerald-600 text-white ring-emerald-200 hover:bg-emerald-700"
+                    : "bg-white text-[#f04423] ring-orange-100 hover:bg-orange-50"
+                )}
                 aria-label="Favorites"
               >
                 <Heart size={20} />
                 {favorites.length > 0 && (
-                  <span className="absolute -right-1 -top-1 rounded-full bg-emerald-600 px-1.5 text-[10px] font-bold text-white">
+                  <span className={clsx(navBadgeClass, "-right-1.5 -top-1.5")}>
                     {favorites.length}
                   </span>
                 )}
@@ -157,7 +166,7 @@ export function SiteNav() {
               <Link
                 href="/cart"
                 className={clsx(
-                  "brand-focus relative inline-flex h-11 w-11 items-center justify-center rounded-lg shadow-sm ring-1 transition hover:-translate-y-0.5",
+                  navActionClass,
                   cartCount > 0
                     ? "bg-emerald-600 text-white ring-emerald-200 hover:bg-emerald-700"
                     : "bg-white text-[#f04423] ring-orange-100 hover:bg-orange-50"
@@ -166,8 +175,8 @@ export function SiteNav() {
               >
                 <ShoppingCart size={21} />
                 {cartCount > 0 && (
-                  <span className="absolute -right-1.5 -top-1.5 min-w-5 rounded-full bg-[#f04423] px-1.5 text-center text-[10px] font-black leading-5 text-white ring-2 ring-white">
-                    {cartCount}
+                  <span className={cartBadgeClass}>
+                    {cartCount > 99 ? "99+" : cartCount}
                   </span>
                 )}
               </Link>
@@ -216,7 +225,7 @@ export function SiteNav() {
 
             <div className="grid gap-2">
               {navLinks.map((link) => {
-                const Icon = link.href === "/orders" ? (profile.role === "delivery" ? Truck : PackageCheck) : link.href === "/owner" || link.href === "/admin" ? Store : link.href === "/profile" ? UserRound : ShoppingCart;
+                const Icon = link.href === "/orders" ? (profile.role === "delivery" ? Truck : PackageCheck) : link.href === "/owner" || link.href === "/admin" ? Store : link.href === "/profile" ? UserRound : link.href === "/wallet" ? Wallet : ShoppingCart;
                 return (
                   <Link
                     key={link.href}

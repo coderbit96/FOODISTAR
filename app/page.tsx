@@ -11,6 +11,12 @@ import { FoodImage } from "@/components/food-image";
 import { useRasoiGo } from "@/components/app-provider";
 import { categories, categoryImages } from "@/lib/catalog";
 
+function paidLabel(method: "cash" | "razorpay" | "wallet") {
+  if (method === "cash") return "COD";
+  if (method === "wallet") return "Wallet paid";
+  return "Online paid";
+}
+
 export default function HomePage() {
   const { data, profile, recordSearch } = useRasoiGo();
   const [query, setQuery] = useState("");
@@ -196,7 +202,7 @@ export default function HomePage() {
                     </div>
                     <div className="rounded-lg bg-white p-3">
                       <p className="text-xs font-black text-slate-400">Order price</p>
-                      <p className="font-black text-slate-950">Rs {assignedDelivery.total} . {assignedDelivery.paymentMethod === "cash" ? "COD" : "Online paid"}</p>
+                      <p className="font-black text-slate-950">Rs {assignedDelivery.total} . {paidLabel(assignedDelivery.paymentMethod)}</p>
                     </div>
                   </div>
                   <p className="mt-4 text-sm leading-6 text-slate-600"><MapPin className="mr-1 inline text-[#f04423]" size={16} />{assignedDelivery.address}</p>
@@ -229,7 +235,7 @@ export default function HomePage() {
                           Rs {order.total}
                         </div>
                       </div>
-                      <p className="mt-3 text-sm text-slate-500">{order.paymentMethod === "cash" ? "Collect cash from customer" : "Online paid"} . Earning Rs 45</p>
+                      <p className="mt-3 text-sm text-slate-500">{order.paymentMethod === "cash" ? "Collect cash from customer" : paidLabel(order.paymentMethod)} . Earning Rs 45</p>
                     </article>
                   );
                 })}
@@ -298,11 +304,6 @@ export default function HomePage() {
                 </motion.div>
 
                 <div className="relative z-10 flex shrink-0 flex-wrap gap-3">
-                  {profile?.role === "user" && (
-                    <Link href="/cart" className="brand-focus rounded-full bg-[#f04423] px-5 py-3 text-sm font-black text-white shadow-lg shadow-orange-200">
-                      Open cart
-                    </Link>
-                  )}
                   {profile?.role === "owner" && (
                     <Link href="/owner" className="brand-focus rounded-full bg-[#f04423] px-5 py-3 text-sm font-black text-white shadow-lg shadow-orange-200">
                       Add item

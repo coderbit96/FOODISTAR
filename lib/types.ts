@@ -94,7 +94,12 @@ export type WalletEntry = {
   amount: number;
   label: string;
   createdAt: string;
-  type: "refund" | "order" | "delivery-earning";
+  type: "refund" | "order" | "delivery-earning" | "top-up";
+  source?: "wallet" | "activity";
+  hidden?: boolean;
+  razorpayOrderId?: string;
+  razorpayPaymentId?: string;
+  razorpaySignature?: string;
 };
 
 export type CancellationPolicy = {
@@ -214,7 +219,7 @@ export type Order = {
   total: number;
   status: OrderStatus;
   createdAt: string;
-  paymentMethod: "cash" | "razorpay";
+  paymentMethod: "cash" | "razorpay" | "wallet";
   paymentStatus?: "pending" | "paid" | "failed" | "refunded";
   razorpayOrderId?: string;
   razorpayPaymentId?: string;

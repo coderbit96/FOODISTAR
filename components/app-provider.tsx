@@ -27,8 +27,11 @@ import type {
   Shop,
   SupportLog,
   UserProfile,
-  UserRole
+  UserRole,
+  WalletEntry
 } from "@/lib/types";
+
+type PaymentMethod = "cash" | "razorpay" | "wallet";
 
 type AuthInput = {
   fullName: string;
@@ -67,6 +70,9 @@ type AppContextValue = {
   cart: CartItem[];
   cartTotal: number;
   favorites: string[];
+  walletBalance: number;
+  addWalletMoney: (amount: number, payment?: Pick<WalletEntry, "razorpayOrderId" | "razorpayPaymentId" | "razorpaySignature">) => void;
+  clearWalletHistory: () => void;
   signUp: (input: AuthInput) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signInWithGoogle: (role?: UserRole) => Promise<void>;
@@ -88,12 +94,12 @@ type AppContextValue = {
     note?: string;
     scheduledFor?: string;
     couponCode?: string;
-    paymentMethod?: "cash" | "razorpay";
+    paymentMethod?: PaymentMethod;
     razorpayOrderId?: string;
     razorpayPaymentId?: string;
     razorpaySignature?: string;
   }) => Order;
-  cancelOrder: (orderId: string) => void;
+  cancelOrder: (orderId: string) => Promise<void>;
   updateOrderStatus: (orderId: string, status: OrderStatus) => void;
   addOwnerItem: (input: AddItemInput) => Promise<void>;
   updateOwnerItem: (input: AddItemInput) => Promise<void>;
@@ -475,12 +481,6 @@ function normalizeRefundRecord(record: Partial<RefundRecord>): RefundRecord {
   };
 }
 
-function getCancellationPenalty(order: Order, policy: CancellationPolicy, cancelledAt: string) {
-  const elapsedMinutes = Math.max(0, Math.floor((new Date(cancelledAt).getTime() - new Date(order.createdAt).getTime()) / 60000));
-  if (elapsedMinutes <= policy.freeCancellationMinutes) return 0;
-  return Math.min(policy.maxPenalty, Math.round((order.total * policy.penaltyPercent) / 100));
-}
-
 function buildSupportTicket(
   input: Pick<SupportLog, "userId" | "orderId" | "category" | "subject" | "message" | "priority">,
   user: UserProfile | undefined,
@@ -543,6 +543,20 @@ function bestCoupon(total: number, coupons: RasoiGoData["coupons"], manualCode?:
     if (manual) return manual;
   }
   return activeCoupons.sort((left, right) => right.discount - left.discount)[0] || null;
+}
+
+function isWalletSpend(entry: WalletEntry) {
+  return entry.type === "order" && (entry.source === "wallet" || entry.label.toLowerCase().startsWith("wallet order"));
+}
+
+function walletBalanceForUser(entries: WalletEntry[], userId: string) {
+  return entries
+    .filter((entry) => entry.userId === userId)
+    .reduce((total, entry) => {
+      if (entry.type === "refund" || entry.type === "top-up" || entry.type === "delivery-earning") return total + entry.amount;
+      if (isWalletSpend(entry)) return total + entry.amount;
+      return total;
+    }, 0);
 }
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
@@ -718,6 +732,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     () => cart.reduce((total, item) => total + item.price * item.quantity, 0),
     [cart]
   );
+  const walletBalance = useMemo(
+    () => profile ? walletBalanceForUser(data.wallet, profile.uid) : 0,
+    [data.wallet, profile]
+  );
 
   const ensureOwnerShop = useCallback(() => {
     if (!profile) throw new Error("Please sign in first.");
@@ -751,6 +769,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     cart,
     cartTotal,
     favorites,
+    walletBalance,
     ownerShop,
     signUp: async (input) => {
       const [{ createUserWithEmailAndPassword, updateProfile }, clientAuth] = await Promise.all([
@@ -949,6 +968,61 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         };
       });
     },
+    addWalletMoney: (amount, payment) => {
+      if (!profile || profile.role !== "user") return;
+      const normalizedAmount = Math.round(Number(amount) || 0);
+      if (normalizedAmount <= 0) return;
+      const walletEntry: WalletEntry = {
+        id: makeId("wallet"),
+        userId: profile.uid,
+        amount: normalizedAmount,
+        label: "Razorpay wallet top-up",
+        createdAt: new Date().toISOString(),
+        type: "top-up",
+        source: "wallet",
+        razorpayOrderId: payment?.razorpayOrderId,
+        razorpayPaymentId: payment?.razorpayPaymentId,
+        razorpaySignature: payment?.razorpaySignature
+      };
+      void upsertCloudDocument("wallet", walletEntry.id, walletEntry);
+      setData((current) => ({
+        ...current,
+        wallet: [walletEntry, ...current.wallet]
+      }));
+    },
+    clearWalletHistory: () => {
+      if (!profile || profile.role !== "user") return;
+      setData((current) => {
+        const userWalletEntries = current.wallet.filter((entry) => entry.userId === profile.uid);
+        if (userWalletEntries.length === 0) return current;
+        const balance = walletBalanceForUser(current.wallet, profile.uid);
+        const balanceSnapshot: WalletEntry | null = balance > 0
+          ? {
+              id: makeId("wallet"),
+              userId: profile.uid,
+              amount: balance,
+              label: "Wallet balance",
+              createdAt: new Date().toISOString(),
+              type: "top-up",
+              source: "wallet",
+              hidden: true
+            }
+          : null;
+
+        void Promise.all([
+          ...userWalletEntries.map((entry) => deleteCloudDocument("wallet", entry.id)),
+          ...(balanceSnapshot ? [upsertCloudDocument("wallet", balanceSnapshot.id, balanceSnapshot)] : [])
+        ]);
+
+        return {
+          ...current,
+          wallet: [
+            ...(balanceSnapshot ? [balanceSnapshot] : []),
+            ...current.wallet.filter((entry) => entry.userId !== profile.uid)
+          ]
+        };
+      });
+    },
     placeOrder: ({ address, addressId, customerLocation, note, scheduledFor, couponCode, paymentMethod = "cash", razorpayOrderId, razorpayPaymentId, razorpaySignature }) => {
       if (!profile) throw new Error("Please sign in before placing an order.");
       if (profile.role !== "user") throw new Error("Only user accounts can place food orders.");
@@ -963,6 +1037,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const deliveryFee = cartTotal >= 500 ? 0 : 40;
       const discount = coupon?.discount || 0;
       const packageCount = cart.reduce((total, item) => total + item.quantity, 0);
+      const total = Math.max(0, cartTotal + deliveryFee - discount);
+      if (paymentMethod === "wallet" && walletBalanceForUser(data.wallet, profile.uid) < total) {
+        throw new Error("Wallet balance is not enough for this order.");
+      }
       const order: Order = {
         id: makeId("order"),
         userId: profile.uid,
@@ -976,10 +1054,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         deliveryFee,
         discount,
         couponCode: coupon?.code,
-        total: Math.max(0, cartTotal + deliveryFee - discount),
+        total,
         status: "pending",
         paymentMethod,
-        paymentStatus: paymentMethod === "razorpay" ? "paid" : "pending",
+        paymentStatus: paymentMethod === "razorpay" || paymentMethod === "wallet" ? "paid" : "pending",
         razorpayOrderId,
         razorpayPaymentId,
         razorpaySignature,
@@ -987,6 +1065,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         deliveryOtp: String(Math.floor(1000 + Math.random() * 9000))
       };
       setData((current) => {
+        if (paymentMethod === "wallet" && walletBalanceForUser(current.wallet, profile.uid) < order.total) {
+          throw new Error("Wallet balance is not enough for this order.");
+        }
+        const walletEntry: WalletEntry | null = paymentMethod === "wallet"
+          ? {
+              id: makeId("wallet"),
+              userId: profile.uid,
+              amount: -order.total,
+              label: `Wallet order ${order.id.slice(0, 10)}`,
+              createdAt: order.createdAt,
+              type: "order",
+              source: "wallet"
+            }
+          : null;
         const orderedShopIds = Array.from(new Set(order.items.map((item) => item.shopId)));
         const ownerNotifications = Array.from(
           new Set(
@@ -1010,29 +1102,27 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             body: `Order ${order.id.slice(0, 10)} has ${packageCount} items for ${address}. Pick it up after kitchen confirmation.`,
             createdAt: order.createdAt
           }));
+        const notification = {
+          id: makeId("notification"),
+          userId: profile.uid,
+          title: paymentMethod === "razorpay" || paymentMethod === "wallet" ? "Payment successful" : "Order placed",
+          body: coupon ? `${coupon.code} applied. Kitchen will confirm soon.` : "Kitchen will confirm soon.",
+          createdAt: order.createdAt
+        };
+        void Promise.all([
+          upsertCloudDocument("orders", order.id, order),
+          ...(walletEntry ? [upsertCloudDocument("wallet", walletEntry.id, walletEntry)] : []),
+          upsertCloudDocument("notifications", notification.id, notification),
+          ...ownerNotifications.map((entry) => upsertCloudDocument("notifications", entry.id, entry)),
+          ...deliveryNotifications.map((entry) => upsertCloudDocument("notifications", entry.id, entry))
+        ]);
 
         return {
           ...current,
           orders: [order, ...current.orders],
-          wallet: [
-            {
-              id: makeId("wallet"),
-              userId: profile.uid,
-              amount: -order.total,
-              label: `${paymentMethod === "razorpay" ? "Razorpay" : "Cash"} order ${order.id.slice(0, 10)}`,
-              createdAt: order.createdAt,
-              type: "order"
-            },
-            ...current.wallet
-          ],
+          wallet: walletEntry ? [walletEntry, ...current.wallet] : current.wallet,
           notifications: [
-            {
-              id: makeId("notification"),
-              userId: profile.uid,
-              title: paymentMethod === "razorpay" ? "Payment successful" : "Order placed",
-              body: coupon ? `${coupon.code} applied. Kitchen will confirm soon.` : "Kitchen will confirm soon.",
-              createdAt: order.createdAt
-            },
+            notification,
             ...ownerNotifications,
             ...deliveryNotifications,
             ...current.notifications
@@ -1042,71 +1132,102 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setCart([]);
       return order;
     },
-    cancelOrder: (orderId) => {
+    cancelOrder: async (orderId) => {
       if (!profile) return;
-      setData((current) => {
-        const order = current.orders.find((entry) => entry.id === orderId);
-        if (!order || order.userId !== profile.uid || !["pending", "received"].includes(order.status)) return current;
-        const now = new Date().toISOString();
-        const penalty = getCancellationPenalty(order, current.cancellationPolicy, now);
-        const refundAmount = Math.max(0, order.total - penalty);
-        const refundStatus = current.cancellationPolicy.requireAdminApproval ? "requested" : "approved";
-        const refundRecord: RefundRecord = {
+      const order = data.orders.find((entry) => entry.id === orderId);
+      if (!order || order.userId !== profile.uid || !["pending", "received"].includes(order.status)) return;
+
+      const now = new Date().toISOString();
+      const isPrepaidOrder = order.paymentMethod === "razorpay" || order.paymentMethod === "wallet";
+      const refundAmount = isPrepaidOrder ? order.total : 0;
+      let transactionId = isPrepaidOrder ? makeId("txn") : undefined;
+
+      if (order.paymentMethod === "razorpay" && refundAmount > 0) {
+        if (!order.razorpayPaymentId) {
+          throw new Error("Razorpay payment id is missing for this order.");
+        }
+        const response = await fetch("/api/razorpay/refund", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            paymentId: order.razorpayPaymentId,
+            amount: refundAmount,
+            orderId: order.id
+          })
+        });
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || "Unable to process Razorpay refund.");
+        transactionId = payload.id || transactionId;
+      }
+
+      const refundRecord: RefundRecord | null = isPrepaidOrder
+        ? {
           id: makeId("refund"),
           orderId: order.id,
           userId: profile.uid,
           amount: refundAmount,
-          penalty,
+          penalty: 0,
           type: refundAmount >= order.total ? "full" : "partial",
-          status: refundStatus,
-          reason: "Customer cancelled order",
+          status: "approved",
+          reason: `${order.paymentMethod === "wallet" ? "Wallet" : "Razorpay"} order cancelled by customer`,
           createdAt: now,
-          processedAt: refundStatus === "approved" ? now : undefined,
-          processedBy: refundStatus === "approved" ? "Auto policy" : undefined,
-          transactionId: refundStatus === "approved" ? makeId("txn") : undefined
-        };
-        const cancelledOrder: Order = {
-          ...order,
-          status: "cancelled",
-          cancelledAt: now,
-          cancellationReason: refundRecord.reason,
-          cancellationPenalty: penalty,
-          refundStatus,
-          refundAmount,
-          refundRequestedAt: now
-        };
-        const walletEntry = refundStatus === "approved"
-          ? {
+          processedAt: now,
+          processedBy: "Auto refund",
+          transactionId
+        }
+        : null;
+      const cancelledOrder: Order = {
+        ...order,
+        status: "cancelled",
+        cancelledAt: now,
+        cancellationReason: isPrepaidOrder ? refundRecord?.reason : "Cash on delivery order cancelled by customer",
+        cancellationPenalty: 0,
+        refundStatus: isPrepaidOrder ? "approved" : undefined,
+        refundAmount,
+        refundRequestedAt: isPrepaidOrder ? now : undefined,
+        refundDecisionNote: isPrepaidOrder ? "Refund processed automatically." : "No refund required for cash on delivery."
+      };
+      const walletEntry: WalletEntry | null = order.paymentMethod === "wallet" && refundAmount > 0
+        ? {
               id: makeId("wallet"),
               userId: profile.uid,
               amount: refundAmount,
-              label: `Refund for ${order.id.slice(0, 10)}${penalty ? ` after Rs ${penalty} penalty` : ""}`,
+              label: `Wallet refund ${order.id.slice(0, 10)}`,
               createdAt: now,
-              type: "refund" as const
+              type: "refund",
+              source: "wallet"
             }
-          : null;
-        void Promise.all([
-          upsertCloudDocument("orders", cancelledOrder.id, cancelledOrder),
-          upsertCloudDocument("refundRecords", refundRecord.id, refundRecord),
-          ...(walletEntry ? [upsertCloudDocument("wallet", walletEntry.id, walletEntry)] : [])
-        ]);
+        : null;
+      const notification = {
+        id: makeId("notification"),
+        userId: profile.uid,
+        title: "Order cancelled",
+        body: isPrepaidOrder
+          ? `Refund of Rs ${refundAmount} processed automatically.`
+          : "Cash on delivery order cancelled. No refund needed.",
+        createdAt: now
+      };
+
+      void Promise.all([
+        upsertCloudDocument("orders", cancelledOrder.id, cancelledOrder),
+        ...(refundRecord ? [upsertCloudDocument("refundRecords", refundRecord.id, refundRecord)] : []),
+        ...(walletEntry ? [upsertCloudDocument("wallet", walletEntry.id, walletEntry)] : []),
+        upsertCloudDocument("notifications", notification.id, notification)
+      ]);
+
+      setData((current) => {
+        if (!current.orders.some((entry) => entry.id === orderId && entry.userId === profile.uid && ["pending", "received"].includes(entry.status))) {
+          return current;
+        }
         return {
           ...current,
           orders: current.orders.map((entry) =>
             entry.id === orderId ? cancelledOrder : entry
           ),
-          refundRecords: [refundRecord, ...current.refundRecords],
+          refundRecords: refundRecord ? [refundRecord, ...current.refundRecords] : current.refundRecords,
           wallet: walletEntry ? [walletEntry, ...current.wallet] : current.wallet,
           notifications: [
-            {
-              id: makeId("notification"),
-              userId: profile.uid,
-              title: "Order cancelled",
-              body: refundStatus === "approved"
-                ? `Refund of Rs ${refundAmount} added after Rs ${penalty} cancellation penalty.`
-                : `Refund request of Rs ${refundAmount} is waiting for admin approval. Rs ${penalty} penalty calculated.`,
-              createdAt: now
-            },
+            notification,
             ...current.notifications
           ]
         };
@@ -1893,7 +2014,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     firebaseUser,
     loading,
     ownerShop,
-    profile
+    profile,
+    walletBalance
   ]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

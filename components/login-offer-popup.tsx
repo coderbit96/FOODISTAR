@@ -14,7 +14,7 @@ export function LoginOfferPopup() {
     if (typeof window === "undefined") return "";
     return window.sessionStorage.getItem(OFFER_DISMISSED_KEY) || "";
   });
-  const open = Boolean(profile && dismissedFor !== profile.uid);
+  const open = Boolean(profile?.role === "user" && dismissedFor !== profile.uid);
 
   const close = () => {
     if (profile && typeof window !== "undefined") {

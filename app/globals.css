@@ -159,15 +159,30 @@ html.dark .bg-\[\#fff9f4\]\/90 {
 }
 
 html.dark .rasoigo-navbar {
-  background-color: #ffcc1a !important;
+  background-color: #fff3cf !important;
 }
 
-.rasoigo-navbar .navbar-action-button {
+.rasoigo-shell .rasoigo-navbar .navbar-action-button,
+.rasoigo-shell .rasoigo-navbar a.navbar-action-button,
+.rasoigo-shell .rasoigo-navbar button.navbar-action-button {
+  isolation: auto;
+  overflow: visible !important;
   transition:
     transform 180ms ease,
     background-color 180ms ease,
     color 180ms ease,
     box-shadow 180ms ease;
+}
+
+.rasoigo-navbar .navbar-count-badge {
+  z-index: 10;
+}
+
+.rasoigo-shell .rasoigo-navbar .navbar-action-button::before,
+.rasoigo-shell .rasoigo-navbar a.navbar-action-button::before,
+.rasoigo-shell .rasoigo-navbar button.navbar-action-button::before {
+  border-radius: inherit;
+  overflow: hidden;
 }
 
 html.dark .rasoigo-navbar .navbar-action-button {
@@ -221,6 +236,17 @@ html.dark .admin-list-row:hover {
 }
 
 html.dark .admin-list-row:hover svg {
+  color: #ffffff !important;
+}
+
+html.dark .food-favorite-button {
+  background-color: #ffffff !important;
+  color: #f04423 !important;
+}
+
+html.dark .food-favorite-button:hover,
+html.dark .food-favorite-button.is-favorite {
+  background-color: #f04423 !important;
   color: #ffffff !important;
 }
 

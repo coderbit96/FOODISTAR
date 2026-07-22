@@ -3,7 +3,8 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CalendarClock, IndianRupee, LocateFixed, MapPin } from "lucide-react";
+import { CalendarClock, IndianRupee, LocateFixed, MapPin, Wallet } from "lucide-react";
+import { clsx } from "clsx";
 import { ProtectedPage } from "@/components/protected-page";
 import { useRasoiGo } from "@/components/app-provider";
 import type { GeoPoint } from "@/lib/types";
@@ -105,7 +106,7 @@ async function reverseGeocode(location: GeoPoint) {
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { cart, cartTotal, placeOrder, profile, data, saveAddress } = useRasoiGo();
+  const { cart, cartTotal, placeOrder, profile, data, saveAddress, walletBalance } = useRasoiGo();
   const [address, setAddress] = useState("");
   const [addressLabel, setAddressLabel] = useState("Home");
   const [addressCity, setAddressCity] = useState("Kolkata");
@@ -116,7 +117,7 @@ export default function CheckoutPage() {
   const [couponCode, setCouponCode] = useState("");
   const [note, setNote] = useState("");
   const [scheduledFor, setScheduledFor] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<"razorpay" | "cash">("razorpay");
+  const [paymentMethod, setPaymentMethod] = useState<"razorpay" | "cash" | "wallet">("razorpay");
   const [paying, setPaying] = useState(false);
   const [error, setError] = useState("");
   const deliveryFee = cartTotal >= 500 || cartTotal === 0 ? 0 : 40;
@@ -133,6 +134,16 @@ export default function CheckoutPage() {
   const checkoutLocation = selectedAddress?.location || customerLocation || undefined;
   const discount = bestCoupon?.discount || 0;
   const payableTotal = Math.max(0, cartTotal + deliveryFee - discount);
+  const walletInsufficient = paymentMethod === "wallet" && walletBalance < payableTotal;
+  const paymentOptions: {
+    value: "razorpay" | "cash" | "wallet";
+    label: string;
+    disabled?: boolean;
+  }[] = [
+    { value: "razorpay", label: "Razorpay online payment" },
+    { value: "wallet", label: `RasoiGo Wallet - Rs ${walletBalance}`, disabled: walletBalance < payableTotal },
+    { value: "cash", label: "Cash on delivery" }
+  ];
 
   const detectLocation = useCallback(async () => {
     setLocating(true);
@@ -207,7 +218,7 @@ export default function CheckoutPage() {
     event.preventDefault();
     setError("");
     try {
-      if (paymentMethod === "cash") {
+      if (paymentMethod === "cash" || paymentMethod === "wallet") {
         saveRasoiGoOrder();
         return;
       }
@@ -278,7 +289,7 @@ export default function CheckoutPage() {
       <main className="mx-auto grid w-full max-w-6xl gap-5 px-4 py-6 lg:grid-cols-[1fr_360px]">
         <form className="rounded-lg border border-orange-100 bg-white p-5 shadow-sm" onSubmit={submit}>
           <h1 className="text-3xl font-black text-slate-950">Checkout</h1>
-          <p className="mt-2 text-sm text-slate-500">Pay securely with Razorpay or place a cash order request.</p>
+          <p className="mt-2 text-sm text-slate-500">Pay securely with Razorpay, wallet balance, or cash on delivery.</p>
 
           <label className="mt-5 block">
             <span className="flex items-center gap-2 text-sm font-black text-slate-700"><MapPin size={17} className="text-[#f04423]" /> Delivery address</span>
@@ -363,31 +374,44 @@ export default function CheckoutPage() {
             />
           </label>
 
-          <div className="mt-4 grid gap-2 sm:grid-cols-2">
-            {[
-              { value: "razorpay", label: "Razorpay online payment" },
-              { value: "cash", label: "Cash on delivery" }
-            ].map((option) => (
+          <div className="mt-4 grid gap-2 sm:grid-cols-3">
+            {paymentOptions.map((option) => (
               <label
                 key={option.value}
-                className="brand-focus flex items-center gap-3 rounded-lg border border-orange-100 bg-orange-50 px-3 py-3 text-sm font-black text-slate-700"
+                className={clsx(
+                  "brand-focus flex items-center gap-3 rounded-lg border border-orange-100 bg-orange-50 px-3 py-3 text-sm font-black text-slate-700",
+                  option.disabled && "cursor-not-allowed opacity-50"
+                )}
               >
                 <input
                   type="radio"
                   name="paymentMethod"
                   value={option.value}
                   checked={paymentMethod === option.value}
-                  onChange={() => setPaymentMethod(option.value as "razorpay" | "cash")}
+                  onChange={() => setPaymentMethod(option.value)}
+                  disabled={option.disabled}
                 />
                 {option.label}
               </label>
             ))}
           </div>
+          {walletBalance < payableTotal && (
+            <Link href="/wallet" className="brand-focus mt-3 inline-flex items-center gap-2 rounded-lg bg-slate-950 px-3 py-2 text-xs font-black text-white">
+              <Wallet size={15} />
+              Add Rs {payableTotal - walletBalance} to wallet
+            </Link>
+          )}
 
           {error && <p className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
-          <button className="brand-focus mt-5 w-full rounded-lg bg-[#f04423] px-4 py-3 text-sm font-black text-white disabled:opacity-60" disabled={paying || cart.length === 0}>
-            {paying ? "Opening payment..." : paymentMethod === "razorpay" ? `Pay Rs ${payableTotal}` : "Place cash order"}
+          <button className="brand-focus mt-5 w-full rounded-lg bg-[#f04423] px-4 py-3 text-sm font-black text-white disabled:opacity-60" disabled={paying || cart.length === 0 || walletInsufficient}>
+            {paying
+              ? "Opening payment..."
+              : paymentMethod === "razorpay"
+                ? `Pay Rs ${payableTotal}`
+                : paymentMethod === "wallet"
+                  ? `Pay Rs ${payableTotal} from wallet`
+                  : "Place cash order"}
           </button>
         </form>
 

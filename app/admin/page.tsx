@@ -69,7 +69,6 @@ export default function AdminPage() {
     adminProcessSupportCompensation,
     adminDeleteSupportTicket,
     adminClearSupportTickets,
-    adminResolveRefundRequest,
     adminClearRefundHistory,
     adminSetCommissionRate,
     adminUpdatePartnerVerification,
@@ -387,7 +386,6 @@ export default function AdminPage() {
 
         <CancellationRefundDashboard
           data={data}
-          onResolveRefund={adminResolveRefundRequest}
           onClearHistory={() => askToConfirm({
             title: "Are you sure you want to clear refund history?",
             message: "Refund requests, transaction records, and cancellation metadata will be cleared.",
@@ -757,20 +755,13 @@ function SupportTicketDashboard({
 
 function CancellationRefundDashboard({
   data,
-  onResolveRefund,
   onClearHistory
 }: {
   data: ReturnType<typeof useRasoiGo>["data"];
-  onResolveRefund: (orderId: string, status: "approved" | "rejected", amount: number, note?: string) => void;
   onClearHistory: () => void;
 }) {
-  const [refundDrafts, setRefundDrafts] = useState<Record<string, { amount: string; note: string }>>({});
   const cancelledOrders = data.orders.filter((order) => order.status === "cancelled");
   const refundByOrderId = new Map(data.refundRecords.map((record) => [record.orderId, record]));
-  const refundRequests = cancelledOrders.filter((order) => {
-    const record = refundByOrderId.get(order.id);
-    return (record?.status || order.refundStatus || "requested") === "requested";
-  });
   const refundRecords = data.refundRecords
     .slice()
     .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime());
@@ -814,10 +805,9 @@ function CancellationRefundDashboard({
     .filter((entry) => entry.cancelled > 0)
     .sort((left, right) => right.rate - left.rate || right.cancelled - left.cancelled)
     .slice(0, 5);
-  const pendingRefundValue = refundRequests.reduce((total, order) => {
-    const record = refundByOrderId.get(order.id);
-    return total + (record?.amount ?? order.refundAmount ?? Math.max(0, order.total - (order.cancellationPenalty || 0)));
-  }, 0);
+  const pendingRefundValue = data.refundRecords
+    .filter((record) => record.status === "requested")
+    .reduce((total, record) => total + record.amount, 0);
   const approvedRefundValue = data.refundRecords
     .filter((record) => record.status === "approved")
     .reduce((total, record) => total + record.amount, 0);
@@ -831,7 +821,7 @@ function CancellationRefundDashboard({
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <h2 className="text-2xl font-black text-slate-950">Cancellation and refunds</h2>
-          <p className="mt-1 text-sm text-slate-500">Configure rules, approve refund requests, track penalties, and find high cancellation areas.</p>
+          <p className="mt-1 text-sm text-slate-500">View automatic refunds, cash cancellation details, transaction records, and high cancellation areas.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <button className="brand-focus rounded-lg bg-red-50 px-3 py-2 text-sm font-black text-red-700 disabled:opacity-50" onClick={onClearHistory} disabled={!hasRefundHistory}>
@@ -856,13 +846,16 @@ function CancellationRefundDashboard({
 
       <div className="mt-5 grid gap-4">
         <section className="rounded-lg bg-slate-50 p-4">
-          <h3 className="text-lg font-black text-slate-950">Refund requests</h3>
+          <h3 className="text-lg font-black text-slate-950">Cancellation and refund details</h3>
           <div className="mt-3 grid max-h-96 gap-3 overflow-y-auto pr-1">
-            {refundRequests.length ? refundRequests.map((order) => {
+            {cancelledOrders.length ? cancelledOrders.map((order) => {
               const record = refundByOrderId.get(order.id);
               const customer = data.users.find((user) => user.uid === order.userId);
-              const defaultAmount = record?.amount ?? order.refundAmount ?? Math.max(0, order.total - (order.cancellationPenalty || 0));
-              const draft = refundDrafts[order.id] || { amount: String(defaultAmount), note: "" };
+              const refundLabel = order.paymentMethod === "cash"
+                ? "No refund required"
+                : record?.status === "approved"
+                  ? `Refunded Rs ${record.amount}`
+                  : "Refund information pending";
 
               return (
                 <article key={order.id} className="rounded-lg bg-white p-3 text-sm">
@@ -872,21 +865,16 @@ function CancellationRefundDashboard({
                       <p className="text-slate-500">{customer?.fullName || "Customer"} . {customer?.email || order.userId}</p>
                       <p className="mt-1 text-xs font-bold text-red-600">Reason: {record?.reason || order.cancellationReason || "No reason recorded"}</p>
                     </div>
-                    <div className="grid gap-2 sm:grid-cols-[120px_1fr_auto_auto]">
-                      <input className="rounded-lg border border-slate-200 px-3 py-2" inputMode="numeric" value={draft.amount} onChange={(event) => setRefundDrafts((current) => ({ ...current, [order.id]: { ...draft, amount: event.target.value } }))} />
-                      <input className="rounded-lg border border-slate-200 px-3 py-2" placeholder="Admin note" value={draft.note} onChange={(event) => setRefundDrafts((current) => ({ ...current, [order.id]: { ...draft, note: event.target.value } }))} />
-                      <button className="rounded-lg bg-emerald-600 px-3 py-2 font-black text-white" onClick={() => onResolveRefund(order.id, "approved", Number(draft.amount), draft.note)}>
-                        Approve
-                      </button>
-                      <button className="rounded-lg bg-red-50 px-3 py-2 font-black text-red-700" onClick={() => onResolveRefund(order.id, "rejected", 0, draft.note)}>
-                        Reject
-                      </button>
+                    <div className="grid gap-2 text-xs font-black uppercase sm:grid-cols-3">
+                      <span className="rounded-lg bg-orange-50 px-3 py-2 text-[#f04423]">{order.paymentMethod}</span>
+                      <span className="rounded-lg bg-emerald-50 px-3 py-2 text-emerald-700">{refundLabel}</span>
+                      <span className="rounded-lg bg-slate-50 px-3 py-2 text-slate-600">{record?.transactionId || "No transaction"}</span>
                     </div>
                   </div>
-                  <p className="mt-2 text-xs font-bold text-slate-400">Penalty: Rs {Math.max(0, order.total - Number(draft.amount || 0))} . Full/partial refund controlled by amount.</p>
+                  <p className="mt-2 text-xs font-bold text-slate-400">{order.cancelledAt ? new Date(order.cancelledAt).toLocaleString() : "Cancelled"} . {order.refundDecisionNote || "Cancellation recorded."}</p>
                 </article>
               );
-            }) : <p className="rounded-lg bg-white p-3 text-sm font-semibold text-slate-500">No pending refund requests.</p>}
+            }) : <p className="rounded-lg bg-white p-3 text-sm font-semibold text-slate-500">No cancellations yet.</p>}
           </div>
         </section>
       </div>
@@ -1138,6 +1126,7 @@ function AdminGovernanceDashboard({
             <option value="all">All payments</option>
             <option value="cash">Cash</option>
             <option value="razorpay">Razorpay</option>
+            <option value="wallet">Wallet</option>
           </select>
           <select className="rounded-lg border border-slate-200 px-3 py-2 text-sm" value={filters.orderStatus} onChange={(event) => setFilters((current) => ({ ...current, orderStatus: event.target.value }))}>
             <option value="all">All statuses</option>

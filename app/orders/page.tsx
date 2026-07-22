@@ -16,6 +16,18 @@ const statusSteps: { key: OrderStatus; label: string; icon: typeof Clock3 }[] = 
   { key: "delivered", label: "Delivered", icon: CheckCircle2 }
 ];
 
+function paymentLabel(method: "cash" | "razorpay" | "wallet") {
+  if (method === "cash") return "cash order";
+  if (method === "wallet") return "wallet paid order";
+  return "Razorpay paid order";
+}
+
+function deliveryPaymentLabel(method: "cash" | "razorpay" | "wallet") {
+  if (method === "cash") return "COD collect";
+  if (method === "wallet") return "Wallet paid";
+  return "Online paid";
+}
+
 export default function OrdersPage() {
   const {
     data,
@@ -172,7 +184,7 @@ export default function OrdersPage() {
                   <div>
                     <p className="text-xs font-black uppercase tracking-[0.16em] text-[#f04423]">{order.id.slice(0, 16)}</p>
                     <h2 className="mt-2 text-xl font-black text-slate-950">
-                      Rs {order.total} {order.paymentMethod === "razorpay" ? "Razorpay paid order" : "cash order"}
+                      Rs {order.total} {paymentLabel(order.paymentMethod)}
                     </h2>
                     <p className="mt-1 text-sm text-slate-500">{new Date(order.createdAt).toLocaleString()}</p>
                   </div>
@@ -183,7 +195,14 @@ export default function OrdersPage() {
                     {profile?.role === "user" && ["pending", "received"].includes(order.status) && (
                       <button
                         className="brand-focus rounded-lg bg-red-50 px-3 py-2 text-sm font-black text-red-700"
-                        onClick={() => cancelOrder(order.id)}
+                        onClick={async () => {
+                          try {
+                            setError("");
+                            await cancelOrder(order.id);
+                          } catch (caught) {
+                            setError(caught instanceof Error ? caught.message : "Unable to cancel order.");
+                          }
+                        }}
                       >
                         <XCircle className="mr-1 inline" size={15} />
                         Cancel
@@ -217,7 +236,9 @@ export default function OrdersPage() {
 
                 {order.status === "cancelled" ? (
                   <div className="mt-5 rounded-lg border border-red-100 bg-red-50 p-3 text-sm font-black text-red-700">
-                    Cancelled. Refund request information is managed by admin.
+                    {order.paymentMethod === "cash"
+                      ? "Cancelled. No refund needed for cash on delivery."
+                      : `Cancelled. Refund ${order.refundStatus === "approved" ? "processed automatically" : "is being processed"}.`}
                   </div>
                 ) : (
                   <div className="mt-5 grid gap-2 sm:grid-cols-5">
@@ -256,7 +277,7 @@ export default function OrdersPage() {
                     </div>
                     <div className="rounded-lg bg-slate-50 px-3 py-3 text-sm">
                       <p className="text-xs font-black uppercase text-slate-400">Payment</p>
-                      <p className="mt-1 font-black text-slate-800">{order.paymentMethod === "cash" ? "COD collect" : "Online paid"} . Earn Rs 45</p>
+                      <p className="mt-1 font-black text-slate-800">{deliveryPaymentLabel(order.paymentMethod)} . Earn Rs 45</p>
                     </div>
                   </div>
                 ) : (
@@ -295,7 +316,7 @@ export default function OrdersPage() {
                       <p className="text-xs font-black uppercase text-slate-500">Owner order summary</p>
                       <p className="mt-2 font-black text-slate-950">Shop items: Rs {ownerOrderSubtotal}</p>
                       <p className="mt-1 text-xs font-semibold text-slate-600">{packageCount} total package items</p>
-                      <p className="mt-1 text-xs font-semibold capitalize text-slate-500">{order.paymentMethod === "cash" ? "Cash order" : "Online paid"} . {order.status.replaceAll("-", " ")}</p>
+                      <p className="mt-1 text-xs font-semibold capitalize text-slate-500">{deliveryPaymentLabel(order.paymentMethod)} . {order.status.replaceAll("-", " ")}</p>
                     </div>
                   </div>
                 )}

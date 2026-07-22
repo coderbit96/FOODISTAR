@@ -48,11 +48,18 @@ export function FoodCard({ item }: { item: MenuItem }) {
         <FoodImage src={item.image} name={item.name} category={item.category} className="h-full w-full object-cover transition duration-500 hover:scale-105" />
         {canOrder && (
           <button
-            className="brand-focus absolute left-3 top-3 rounded-lg bg-white p-2 text-[#f04423] shadow"
+            type="button"
+            className={clsx(
+              "food-favorite-button absolute left-3 top-3 z-30 inline-flex h-10 w-10 items-center justify-center rounded-full text-sm font-black shadow-xl ring-2 ring-white transition hover:-translate-y-0.5",
+              favorite
+                ? "is-favorite bg-[#f04423] text-white"
+                : "bg-white text-[#f04423] hover:bg-[#f04423] hover:text-white"
+            )}
             onClick={() => toggleFavorite(item.id)}
-            aria-label="Toggle favorite"
+            aria-label={favorite ? "Remove from favorites" : "Add to favorites"}
+            title={favorite ? "Remove from favorites" : "Add to favorites"}
           >
-            <Heart size={18} fill={favorite ? "currentColor" : "none"} />
+            <Heart size={19} fill={favorite ? "currentColor" : "none"} />
           </button>
         )}
         <span
@@ -83,32 +90,34 @@ export function FoodCard({ item }: { item: MenuItem }) {
           </div>
 
           {canOrder && (
-            <div className="flex items-center overflow-hidden rounded-lg border border-slate-200">
-              <button
-                className="brand-focus p-2 text-slate-700 hover:bg-slate-50"
-                onClick={handleDecreaseQuantity}
-                aria-label="Decrease quantity"
-              >
-                <Minus size={14} />
-              </button>
-              <span className="w-8 text-center text-sm font-black">{displayQuantity}</span>
-              <button
-                className="brand-focus p-2 text-slate-700 hover:bg-slate-50"
-                onClick={handleIncreaseQuantity}
-                aria-label="Increase quantity"
-              >
-                <Plus size={14} />
-              </button>
-              <button
-                className={clsx(
-                  "brand-focus p-2 text-white transition-colors",
-                  readyToCheckout ? "bg-emerald-600" : "bg-[#f04423]"
-                )}
-                onClick={handleAddToCart}
-                aria-label={readyToCheckout ? "Go to checkout" : "Add to cart"}
-              >
-                <ShoppingCart size={16} />
-              </button>
+            <div className="flex items-center">
+              <div className="flex items-center overflow-hidden rounded-lg border border-slate-200">
+                <button
+                  className="brand-focus p-2 text-slate-700 hover:bg-slate-50"
+                  onClick={handleDecreaseQuantity}
+                  aria-label="Decrease quantity"
+                >
+                  <Minus size={14} />
+                </button>
+                <span className="w-8 text-center text-sm font-black">{displayQuantity}</span>
+                <button
+                  className="brand-focus p-2 text-slate-700 hover:bg-slate-50"
+                  onClick={handleIncreaseQuantity}
+                  aria-label="Increase quantity"
+                >
+                  <Plus size={14} />
+                </button>
+                <button
+                  className={clsx(
+                    "brand-focus p-2 text-white transition-colors",
+                    readyToCheckout ? "bg-emerald-600" : "bg-[#f04423]"
+                  )}
+                  onClick={handleAddToCart}
+                  aria-label={readyToCheckout ? "Go to checkout" : "Add to cart"}
+                >
+                  <ShoppingCart size={16} />
+                </button>
+              </div>
             </div>
           )}
         </div>
