@@ -64,12 +64,19 @@ export type CartItem = MenuItem & {
 
 export type OrderStatus = "pending" | "received" | "preparing" | "out-for-delivery" | "delivered" | "cancelled";
 
+export type GeoPoint = {
+  lat: number;
+  lng: number;
+  accuracy?: number;
+};
+
 export type DeliveryAddress = {
   id: string;
   label: string;
   line1: string;
   city: string;
   landmark?: string;
+  location?: GeoPoint;
   default?: boolean;
 };
 
@@ -197,6 +204,7 @@ export type Order = {
   items: CartItem[];
   address: string;
   addressId?: string;
+  customerLocation?: GeoPoint;
   note?: string;
   scheduledFor?: string;
   subtotal?: number;

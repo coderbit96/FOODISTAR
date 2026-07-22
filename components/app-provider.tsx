@@ -18,6 +18,7 @@ import type {
   AdminActionLog,
   CancellationPolicy,
   CartItem,
+  GeoPoint,
   RasoiGoData,
   MenuItem,
   Order,
@@ -54,6 +55,7 @@ type SaveAddressInput = {
   line1: string;
   city: string;
   landmark?: string;
+  location?: GeoPoint;
   default?: boolean;
 };
 
@@ -82,6 +84,7 @@ type AppContextValue = {
   placeOrder: (input: {
     address: string;
     addressId?: string;
+    customerLocation?: GeoPoint;
     note?: string;
     scheduledFor?: string;
     couponCode?: string;
@@ -946,7 +949,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         };
       });
     },
-    placeOrder: ({ address, addressId, note, scheduledFor, couponCode, paymentMethod = "cash", razorpayOrderId, razorpayPaymentId, razorpaySignature }) => {
+    placeOrder: ({ address, addressId, customerLocation, note, scheduledFor, couponCode, paymentMethod = "cash", razorpayOrderId, razorpayPaymentId, razorpaySignature }) => {
       if (!profile) throw new Error("Please sign in before placing an order.");
       if (profile.role !== "user") throw new Error("Only user accounts can place food orders.");
       if (cart.length === 0) throw new Error("Your cart is empty.");
@@ -966,6 +969,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         items: cart,
         address,
         addressId,
+        customerLocation,
         note,
         scheduledFor,
         subtotal: cartTotal,

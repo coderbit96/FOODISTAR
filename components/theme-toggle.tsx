@@ -14,7 +14,7 @@ export function ThemeToggle() {
   return (
     <button
       type="button"
-      className="brand-focus rounded-lg bg-white p-2 text-slate-900 shadow-sm ring-1 ring-orange-100"
+      className="navbar-action-button brand-focus inline-flex h-11 w-11 items-center justify-center rounded-lg bg-white text-slate-900 shadow-sm ring-1 ring-orange-100"
       onClick={toggleTheme}
       aria-label="Toggle dark mode"
       title="Toggle dark mode"

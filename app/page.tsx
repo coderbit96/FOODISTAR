@@ -308,9 +308,9 @@ export default function HomePage() {
                       Add item
                     </Link>
                   )}
-                  {profile?.role !== "user" && (
-                    <Link href={profile?.role === "admin" ? "/admin" : "/orders"} className="brand-focus rounded-full border border-orange-100 bg-orange-50 px-5 py-3 text-sm font-black text-[#f04423]">
-                      {profile?.role === "admin" ? "Admin dashboard" : "Kitchen orders"}
+                  {profile?.role === "owner" && (
+                    <Link href="/orders" className="brand-focus rounded-full border border-orange-100 bg-orange-50 px-5 py-3 text-sm font-black text-[#f04423]">
+                      Kitchen orders
                     </Link>
                   )}
                 </div>

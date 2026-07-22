@@ -1,12 +1,12 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo } from "react";
-import { CalendarClock, IndianRupee, MapPin } from "lucide-react";
+import { CalendarClock, IndianRupee, LocateFixed, MapPin } from "lucide-react";
 import { ProtectedPage } from "@/components/protected-page";
 import { useRasoiGo } from "@/components/app-provider";
+import type { GeoPoint } from "@/lib/types";
 
 type RazorpaySuccessResponse = {
   razorpay_order_id: string;
@@ -62,12 +62,56 @@ function loadRazorpayScript() {
   });
 }
 
+function getCurrentPosition() {
+  return new Promise<GeolocationPosition>((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject(new Error("Location is not supported on this browser."));
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(resolve, reject, {
+      enableHighAccuracy: true,
+      timeout: 15000,
+      maximumAge: 0
+    });
+  });
+}
+
+async function reverseGeocode(location: GeoPoint) {
+  try {
+    const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${location.lat}&lon=${location.lng}&zoom=18&addressdetails=1`, {
+      headers: { Accept: "application/json" }
+    });
+    if (!response.ok) return null;
+    const payload = await response.json() as {
+      display_name?: string;
+      address?: {
+        city?: string;
+        town?: string;
+        village?: string;
+        suburb?: string;
+        county?: string;
+        state?: string;
+      };
+    };
+    return {
+      line1: payload.display_name || `${location.lat.toFixed(6)}, ${location.lng.toFixed(6)}`,
+      city: payload.address?.city || payload.address?.town || payload.address?.village || payload.address?.suburb || payload.address?.county || payload.address?.state || "Kolkata"
+    };
+  } catch {
+    return null;
+  }
+}
+
 export default function CheckoutPage() {
   const router = useRouter();
   const { cart, cartTotal, placeOrder, profile, data, saveAddress } = useRasoiGo();
   const [address, setAddress] = useState("");
   const [addressLabel, setAddressLabel] = useState("Home");
   const [addressCity, setAddressCity] = useState("Kolkata");
+  const [customerLocation, setCustomerLocation] = useState<GeoPoint | null>(null);
+  const [locating, setLocating] = useState(false);
+  const [locationMessage, setLocationMessage] = useState("Detecting your current location...");
   const [selectedAddressId, setSelectedAddressId] = useState("");
   const [couponCode, setCouponCode] = useState("");
   const [note, setNote] = useState("");
@@ -82,12 +126,48 @@ export default function CheckoutPage() {
     const manual = eligible.find((coupon) => coupon.code.toLowerCase() === couponCode.trim().toLowerCase());
     return manual || eligible.sort((left, right) => right.discount - left.discount)[0] || null;
   }, [cartTotal, couponCode, data.coupons]);
-  const selectedAddress = addresses.find((entry) => entry.id === selectedAddressId) || addresses.find((entry) => entry.default);
+  const selectedAddress = addresses.find((entry) => entry.id === selectedAddressId) || null;
   const checkoutAddress = selectedAddress
     ? `${selectedAddress.label}: ${selectedAddress.line1}, ${selectedAddress.city}${selectedAddress.landmark ? `, ${selectedAddress.landmark}` : ""}`
     : address;
+  const checkoutLocation = selectedAddress?.location || customerLocation || undefined;
   const discount = bestCoupon?.discount || 0;
   const payableTotal = Math.max(0, cartTotal + deliveryFee - discount);
+
+  const detectLocation = useCallback(async () => {
+    setLocating(true);
+    setLocationMessage("Detecting your current location...");
+    setError("");
+    try {
+      const position = await getCurrentPosition();
+      const location = {
+        lat: position.coords.latitude,
+        lng: position.coords.longitude,
+        accuracy: Math.round(position.coords.accuracy)
+      };
+      setCustomerLocation(location);
+      const resolvedAddress = await reverseGeocode(location);
+      setSelectedAddressId("");
+      setAddress(resolvedAddress?.line1 || `${location.lat.toFixed(6)}, ${location.lng.toFixed(6)}`);
+      setAddressCity(resolvedAddress?.city || "Kolkata");
+      setLocationMessage(`Location detected within about ${location.accuracy || "nearby"} meters.`);
+    } catch (caught) {
+      const locationError = caught as Partial<GeolocationPositionError>;
+      setLocationMessage(locationError.code === 1
+        ? "Location permission denied. Please allow location access or type your address."
+        : "Unable to detect location. Please type your address or try again.");
+    } finally {
+      setLocating(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      void detectLocation();
+    }, 100);
+
+    return () => window.clearTimeout(timer);
+  }, [detectLocation]);
 
   if (profile?.role !== "user") {
     const target = profile?.role === "owner" ? "/owner" : "/orders";
@@ -111,6 +191,7 @@ export default function CheckoutPage() {
     placeOrder({
       address: checkoutAddress,
       addressId: selectedAddress?.id,
+      customerLocation: checkoutLocation,
       note,
       scheduledFor: scheduledFor || undefined,
       couponCode: couponCode || bestCoupon?.code,
@@ -205,8 +286,9 @@ export default function CheckoutPage() {
               <select
                 className="brand-focus mt-2 w-full rounded-lg border border-slate-200 px-3 py-3 text-sm"
                 value={selectedAddress?.id || ""}
-                onChange={(event) => setSelectedAddressId(event.target.value)}
-              >
+              onChange={(event) => setSelectedAddressId(event.target.value)}
+            >
+                <option value="">Use current/new address</option>
                 {addresses.map((entry) => (
                   <option key={entry.id} value={entry.id}>{entry.label} - {entry.line1}</option>
                 ))}
@@ -215,10 +297,25 @@ export default function CheckoutPage() {
             <textarea
               className="brand-focus mt-2 min-h-28 w-full resize-none rounded-lg border border-slate-200 px-3 py-3 text-sm"
               value={address}
-              onChange={(event) => setAddress(event.target.value)}
+              onChange={(event) => {
+                setSelectedAddressId("");
+                setAddress(event.target.value);
+              }}
               placeholder={selectedAddress ? "Use selected address or type a new one" : "Type delivery address"}
               required={!selectedAddress}
             />
+            <div className="mt-2 flex flex-col gap-2 rounded-lg bg-slate-50 px-3 py-2 text-xs font-bold text-slate-500 sm:flex-row sm:items-center sm:justify-between">
+              <span>{locationMessage}</span>
+              <button
+                type="button"
+                className="brand-focus inline-flex items-center justify-center gap-1 rounded-lg bg-white px-3 py-2 text-xs font-black text-[#f04423] ring-1 ring-orange-100 disabled:opacity-60"
+                onClick={detectLocation}
+                disabled={locating}
+              >
+                <LocateFixed size={15} />
+                {locating ? "Detecting" : "Use current location"}
+              </button>
+            </div>
           </label>
 
           <div className="mt-3 grid gap-3 rounded-lg bg-orange-50 p-3 md:grid-cols-[1fr_1fr_auto]">
@@ -229,7 +326,7 @@ export default function CheckoutPage() {
               className="brand-focus rounded-lg bg-slate-950 px-3 py-2 text-sm font-black text-white"
               onClick={() => {
                 if (!address.trim()) return;
-                saveAddress({ label: addressLabel, line1: address, city: addressCity, default: addresses.length === 0 });
+                saveAddress({ label: addressLabel, line1: address, city: addressCity, location: customerLocation || undefined, default: addresses.length === 0 });
               }}
             >
               Save address

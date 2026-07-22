@@ -162,6 +162,27 @@ html.dark .rasoigo-navbar {
   background-color: #ffcc1a !important;
 }
 
+.rasoigo-navbar .navbar-action-button {
+  transition:
+    transform 180ms ease,
+    background-color 180ms ease,
+    color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+html.dark .rasoigo-navbar .navbar-action-button {
+  background-color: #020617;
+  color: #ffffff;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.18);
+  --tw-ring-color: #020617;
+}
+
+html.dark .rasoigo-navbar .navbar-action-button:hover {
+  background-color: #ffffff;
+  color: #f04423;
+  --tw-ring-color: #fed7aa;
+}
+
 html.dark .bg-\[\#fff3cf\] {
   background-color: #1f1a10 !important;
 }

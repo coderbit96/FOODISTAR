@@ -41,7 +41,7 @@ export function SiteNav() {
       { href: "/profile", label: "Profile" }
     ],
     admin: [
-      { href: "/admin", label: "Admin" },
+      { href: "/admin", label: "Dashboard" },
       { href: "/", label: "Menu preview" },
       { href: "/profile", label: "Profile" }
     ]
@@ -58,10 +58,11 @@ export function SiteNav() {
     await logout();
     router.push("/signin");
   };
+  const isAdmin = profile.role === "admin";
 
   return (
     <header className="rasoigo-navbar sticky top-0 z-30 border-b border-yellow-300 bg-[#ffcc1a] backdrop-blur">
-      <div className="mx-auto flex min-h-16 w-full max-w-7xl items-center justify-between px-4 py-3">
+      <div className="mx-auto flex min-h-16 w-full max-w-7xl items-center justify-between gap-4 px-4 py-3">
         <Link href="/" className="text-2xl font-black tracking-wide text-[#f04423]">
           RasoiGo
         </Link>
@@ -73,9 +74,13 @@ export function SiteNav() {
               href={link.href}
               className={clsx(
                 "brand-focus rounded-lg px-3 py-2 text-sm font-semibold transition",
-                pathname === link.href
-                  ? "bg-[#f04423] text-white hover:bg-[#c93418] hover:text-white"
-                  : "text-slate-600 hover:bg-orange-50 hover:text-[#f04423]"
+                isAdmin
+                  ? pathname === link.href
+                    ? "bg-[#f04423] text-white shadow-md shadow-orange-400/30 hover:bg-slate-950 hover:text-white"
+                    : "text-slate-900/80 hover:bg-slate-950 hover:text-white"
+                  : pathname === link.href
+                    ? "bg-[#f04423] text-white hover:bg-[#c93418] hover:text-white"
+                    : "text-slate-600 hover:bg-orange-50 hover:text-[#f04423]"
               )}
             >
               {link.label}
@@ -83,14 +88,17 @@ export function SiteNav() {
           ))}
         </nav>
 
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           <ThemeToggle />
           <div className="relative">
             <button
               type="button"
               className={clsx(
-                "brand-focus relative rounded-lg bg-white p-2 text-slate-700 shadow-sm ring-1 ring-orange-100 transition hover:bg-orange-50",
-                userNotifications.length > 0 && "text-[#f04423]"
+                "brand-focus relative inline-flex h-11 w-11 items-center justify-center rounded-lg shadow-sm ring-1 transition",
+                isAdmin
+                  ? "bg-slate-950 text-white ring-slate-900 hover:bg-white hover:text-[#f04423] hover:ring-orange-200"
+                  : "bg-white text-slate-700 ring-orange-100 hover:bg-orange-50",
+                userNotifications.length > 0 && (isAdmin ? "text-yellow-300 hover:text-[#f04423]" : "text-[#f04423]")
               )}
               onClick={() => setNotificationsOpen((value) => !value)}
               aria-label="Notifications"
@@ -136,7 +144,7 @@ export function SiteNav() {
             <>
               <Link
                 href="/favorites"
-                className="brand-focus relative rounded-lg bg-white p-2 text-[#f04423] shadow-sm ring-1 ring-orange-100"
+                className="brand-focus relative inline-flex h-11 w-11 items-center justify-center rounded-lg bg-white text-[#f04423] shadow-sm ring-1 ring-orange-100 transition hover:bg-orange-50"
                 aria-label="Favorites"
               >
                 <Heart size={20} />
@@ -149,14 +157,14 @@ export function SiteNav() {
               <Link
                 href="/cart"
                 className={clsx(
-                  "brand-focus relative rounded-lg p-2.5 shadow-sm ring-1 transition hover:-translate-y-0.5",
+                  "brand-focus relative inline-flex h-11 w-11 items-center justify-center rounded-lg shadow-sm ring-1 transition hover:-translate-y-0.5",
                   cartCount > 0
                     ? "bg-emerald-600 text-white ring-emerald-200 hover:bg-emerald-700"
                     : "bg-white text-[#f04423] ring-orange-100 hover:bg-orange-50"
                 )}
                 aria-label="Cart"
               >
-                <ShoppingCart size={23} />
+                <ShoppingCart size={21} />
                 {cartCount > 0 && (
                   <span className="absolute -right-1.5 -top-1.5 min-w-5 rounded-full bg-[#f04423] px-1.5 text-center text-[10px] font-black leading-5 text-white ring-2 ring-white">
                     {cartCount}
@@ -167,14 +175,19 @@ export function SiteNav() {
           )}
 
           <button
-            className="brand-focus ml-4 hidden rounded-md bg-slate-950 px-2.5 py-1.5 text-xs font-semibold text-white md:inline-flex"
+            className="brand-focus ml-2 hidden h-11 items-center justify-center rounded-lg bg-slate-950 px-4 text-sm font-semibold text-white ring-1 ring-slate-900 transition hover:bg-white hover:text-[#f04423] hover:ring-orange-200 md:inline-flex"
             onClick={handleLogout}
           >
             Sign out
           </button>
 
           <button
-            className="brand-focus rounded-lg bg-white p-2 text-slate-900 shadow-sm ring-1 ring-orange-100 md:hidden"
+            className={clsx(
+              "brand-focus inline-flex h-11 w-11 items-center justify-center rounded-lg shadow-sm ring-1 md:hidden",
+              isAdmin
+                ? "bg-slate-950 text-white ring-slate-900 hover:bg-white hover:text-[#f04423] hover:ring-orange-200"
+                : "bg-white text-slate-900 ring-orange-100 hover:bg-orange-50"
+            )}
             onClick={() => setOpen((value) => !value)}
             aria-label="Open menu"
           >
