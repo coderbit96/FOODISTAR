@@ -148,6 +148,7 @@ const DEFAULT_CANCELLATION_POLICY: CancellationPolicy = {
   maxPenalty: 100,
   requireAdminApproval: true
 };
+const CUSTOMER_CANCELLABLE_STATUSES: OrderStatus[] = ["pending", "received", "preparing"];
 
 const AppContext = createContext<AppContextValue | null>(null);
 
@@ -1135,7 +1136,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     cancelOrder: async (orderId) => {
       if (!profile) return;
       const order = data.orders.find((entry) => entry.id === orderId);
-      if (!order || order.userId !== profile.uid || !["pending", "received"].includes(order.status)) return;
+      if (!order || order.userId !== profile.uid || !CUSTOMER_CANCELLABLE_STATUSES.includes(order.status)) return;
 
       const now = new Date().toISOString();
       const isPrepaidOrder = order.paymentMethod === "razorpay" || order.paymentMethod === "wallet";
@@ -1207,16 +1208,31 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           : "Cash on delivery order cancelled. No refund needed.",
         createdAt: now
       };
+      const cancelledShopIds = Array.from(new Set(order.items.map((item) => item.shopId)));
+      const ownerNotifications = Array.from(
+        new Set(
+          data.shops
+            .filter((shop) => cancelledShopIds.includes(shop.id) && shop.ownerId)
+            .map((shop) => shop.ownerId as string)
+        )
+      ).map((ownerId) => ({
+        id: makeId("notification"),
+        userId: ownerId,
+        title: "Order cancelled",
+        body: `${profile.fullName} cancelled order ${order.id.slice(0, 10)} before it went out for delivery.`,
+        createdAt: now
+      }));
 
       void Promise.all([
         upsertCloudDocument("orders", cancelledOrder.id, cancelledOrder),
         ...(refundRecord ? [upsertCloudDocument("refundRecords", refundRecord.id, refundRecord)] : []),
         ...(walletEntry ? [upsertCloudDocument("wallet", walletEntry.id, walletEntry)] : []),
-        upsertCloudDocument("notifications", notification.id, notification)
+        upsertCloudDocument("notifications", notification.id, notification),
+        ...ownerNotifications.map((entry) => upsertCloudDocument("notifications", entry.id, entry))
       ]);
 
       setData((current) => {
-        if (!current.orders.some((entry) => entry.id === orderId && entry.userId === profile.uid && ["pending", "received"].includes(entry.status))) {
+        if (!current.orders.some((entry) => entry.id === orderId && entry.userId === profile.uid && CUSTOMER_CANCELLABLE_STATUSES.includes(entry.status))) {
           return current;
         }
         return {
@@ -1228,6 +1244,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           wallet: walletEntry ? [walletEntry, ...current.wallet] : current.wallet,
           notifications: [
             notification,
+            ...ownerNotifications,
             ...current.notifications
           ]
         };

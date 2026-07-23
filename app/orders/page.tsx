@@ -15,6 +15,7 @@ const statusSteps: { key: OrderStatus; label: string; icon: typeof Clock3 }[] = 
   { key: "out-for-delivery", label: "Out", icon: Truck },
   { key: "delivered", label: "Delivered", icon: CheckCircle2 }
 ];
+const customerCancellableStatuses: OrderStatus[] = ["pending", "received", "preparing"];
 
 function paymentLabel(method: "cash" | "razorpay" | "wallet") {
   if (method === "cash") return "cash order";
@@ -192,7 +193,7 @@ export default function OrdersPage() {
                     <span className="w-fit rounded-lg bg-emerald-50 px-3 py-2 text-sm font-black capitalize text-emerald-700">
                       {order.status.replaceAll("-", " ")}
                     </span>
-                    {profile?.role === "user" && ["pending", "received"].includes(order.status) && (
+                    {profile?.role === "user" && customerCancellableStatuses.includes(order.status) && (
                       <button
                         className="brand-focus rounded-lg bg-red-50 px-3 py-2 text-sm font-black text-red-700"
                         onClick={async () => {
